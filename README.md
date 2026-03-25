@@ -82,3 +82,13 @@ Atualmente, o sistema se encontra em fase inicial de desenvolvimento (Sprint 0),
 - Representação inicial dos dados  
 
 Essa etapa tem como objetivo validar o funcionamento da aplicação e preparar a base para as próximas evoluções.
+
+
+---
+## 👨‍💻 Integrantes
+
+* Daniela Teixeira Abreu – 4231923259
+* Marcela Maria Barbosa - 422222661
+* Matheus Felipe Lopes da Silva - 4231925981
+* Nátali Isaltino Gomes - 4231925815
+* Vinícius Raphael Rios de Lima - 42321398
