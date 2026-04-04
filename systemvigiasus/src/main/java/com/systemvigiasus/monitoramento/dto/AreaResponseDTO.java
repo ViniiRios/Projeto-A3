@@ -4,14 +4,16 @@ public class AreaResponseDTO {
 
     private Long id;
     private String nome;
-    private String risco; 
+    private String risco;
+    private double taxaIncidencia;
 
     public AreaResponseDTO() {}
 
-    public AreaResponseDTO(Long id, String nome, String risco) {
+    public AreaResponseDTO(Long id, String nome, String risco, double taxaIncidencia) {
         this.id = id;
         this.nome = nome;
         this.risco = risco;
+        this.taxaIncidencia = taxaIncidencia;
     }
 
     public Long getId() { return id; }
@@ -22,4 +24,7 @@ public class AreaResponseDTO {
 
     public String getRisco() { return risco; }
     public void setRisco(String risco) { this.risco = risco; }
+
+    public double getTaxaIncidencia() { return taxaIncidencia; }
+    public void setTaxaIncidencia(double taxaIncidencia) { this.taxaIncidencia = taxaIncidencia; }
 }

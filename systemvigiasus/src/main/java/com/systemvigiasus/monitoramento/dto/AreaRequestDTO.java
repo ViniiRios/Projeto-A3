@@ -1,23 +1,30 @@
 package com.systemvigiasus.monitoramento.dto;
 
 public class AreaRequestDTO {
-    
+
+    private Long id;
     private String nome;
-    private String unidadeSaude;
-    private int totalArmadilhas;
-    private int positivas;
+    private int numeroCasos;
+    private int populacao;
 
     public AreaRequestDTO() {}
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
 
-    public String getUnidadeSaude() { return unidadeSaude; }
-    public void setUnidadeSaude(String unidadeSaude) { this.unidadeSaude = unidadeSaude; }
+    public int getNumeroCasos() { return numeroCasos; }
+    public void setNumeroCasos(int numeroCasos) { this.numeroCasos = numeroCasos; }
 
-    public int getTotalArmadilhas() { return totalArmadilhas; }
-    public void setTotalArmadilhas(int totalArmadilhas) { this.totalArmadilhas = totalArmadilhas; }
+    public int getPopulacao() { return populacao; }
+    public void setPopulacao(int populacao) { this.populacao = populacao; }
 
-    public int getPositivas() { return positivas; }
-    public void setPositivas(int positivas) { this.positivas = positivas; }
+    public AreaRequestDTO(Long id, String nome, int numeroCasos, int populacao) {
+        this.id = id;
+        this.nome = nome;
+        this.numeroCasos = numeroCasos;
+        this.populacao = populacao;
+    }
 }
