@@ -8,13 +8,13 @@ import com.systemvigiasus.monitoramento.dto.AreaResponseDTO;
 public class AreaService {
 
     public AreaResponseDTO calcularRiscoEpidemiologico(AreaRequestDTO dados) {
-        double percentualPositivas = (double) dados.getPositivas() / dados.getTotalArmadilhas() * 100;
+        double taxaIncidencia = (double) dados.getNumeroCasos() / dados.getPopulacao() * 100000;
         
         String nivelRisco;
         
-        if (percentualPositivas > 50) {
+        if (taxaIncidencia > 50) {
             nivelRisco = "ALTO";
-        } else if (percentualPositivas >= 20) {
+        } else if (taxaIncidencia >= 20) {
             nivelRisco = "MÉDIO";
         } else {
             nivelRisco = "BAIXO";
@@ -23,7 +23,7 @@ public class AreaService {
         AreaResponseDTO resposta = new AreaResponseDTO();
         resposta.setNome(dados.getNome());
         resposta.setRisco(nivelRisco);
-        
+        resposta.setTaxaIncidencia(taxaIncidencia);
         return resposta;
     }
 }
