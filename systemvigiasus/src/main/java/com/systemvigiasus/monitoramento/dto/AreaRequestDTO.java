@@ -7,6 +7,12 @@ public class AreaRequestDTO {
     private int numeroCasos;
     private int populacao;
 
+    private int mes;
+    private int ano;
+    private int casosLag2;
+    private double temperatura;
+    private double chuva;
+
     public AreaRequestDTO() {}
 
     public Long getId() { return id; }
@@ -21,10 +27,30 @@ public class AreaRequestDTO {
     public int getPopulacao() { return populacao; }
     public void setPopulacao(int populacao) { this.populacao = populacao; }
 
-    public AreaRequestDTO(Long id, String nome, int numeroCasos, int populacao) {
+    public int getMes() { return mes; }
+    public void setMes(int mes) { this.mes = mes; }
+
+    public int getAno() { return ano; }
+    public void setAno(int ano) { this.ano = ano; }
+
+    public int getCasosLag2() { return casosLag2; }
+    public void setCasosLag2(int casosLag2) { this.casosLag2 = casosLag2; }
+
+    public double getTemperatura() { return temperatura; }
+    public void setTemperatura(double temperatura) { this.temperatura = temperatura; }
+
+    public double getChuva() { return chuva; }
+    public void setChuva(double chuva) { this.chuva = chuva; }
+
+    public AreaRequestDTO(Long id, String nome, int numeroCasos, int populacao, int mes, int ano, int casosLag2, double temperatura, double chuva) {
         this.id = id;
         this.nome = nome;
         this.numeroCasos = numeroCasos;
         this.populacao = populacao;
+        this.mes = mes;
+        this.ano = ano;
+        this.casosLag2 = casosLag2;
+        this.temperatura = temperatura;
+        this.chuva = chuva;
     }
 }
