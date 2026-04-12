@@ -6,7 +6,6 @@ from pathlib import Path
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÕES DO MODELO (Extraído do seu Streamlit) ---
 MODEL_FILENAME = "model/vigiasus_xg_model.pkl"
 MODEL_FEATURES = [
     'mes', 'ano', 'casos_lag1', 'casos_lag2',
@@ -15,31 +14,31 @@ MODEL_FEATURES = [
     'PRESSAO_MEDIA_lag1', 'PRESSAO_MEDIA_lag2'
 ]
 
-# Constantes de Risco (Mantendo o padrão do seu projeto)
 LIMITE_RISCO_ALTO = 2000
-LIMITE_RISCO_MEDIO = 800
+LIMITE_RISCO_MEDIO = 1000
 
-# Carregar o modelo uma única vez ao iniciar o servidor
 with open(MODEL_FILENAME, 'rb') as file:
     xg_model = pickle.load(file)
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # 1. Recebe os dados do Java
-        dados_entrada = request.get_json()
+        dados_brutos = request.get_json()
+        print(f"DEBUG - Recebido do Java: {dados_brutos}")
+
+        dados_traduzidos = {
+            'TEMP_MEDIA_lag1': dados_brutos.get('temperatura'),
+            'PRECIPITACAO_lag1': dados_brutos.get('chuva'),
+            'CASOS_lag1': dados_brutos.get('numeroCasos'),
+        }
         
-        # 2. Converte para DataFrame garantindo a ordem das colunas
-        input_df = pd.DataFrame([dados_entrada], columns=MODEL_FEATURES)
+        input_df = pd.DataFrame([dados_traduzidos], columns=MODEL_FEATURES)
         
-        # 3. Predição
         prediction = xg_model.predict(input_df)[0]
         
-        # 4. Lógica de "Zero Lock" (Ajuste que você tinha no Streamlit)
         if prediction < 5.0:
-            prediction = (input_df['TEMP_MEDIA_lag1'].iloc[0] * 50) + (input_df['PRECIPITACAO_lag1'].iloc[0] * 1)
-        
-        # 5. Classificação de Risco
+            prediction = (dados_traduzidos['TEMP_MEDIA_lag1'] * 50) + (dados_traduzidos['PRECIPITACAO_lag1'] * 1)
+    
         if prediction >= LIMITE_RISCO_ALTO:
             nivel = "ALERTA MÁXIMO"
             cor = "RED"
@@ -49,15 +48,15 @@ def predict():
         else:
             nivel = "RISCO BAIXO"
             cor = "GREEN"
-
         return jsonify({
-            'casos_previstos': int(round(prediction, 0)),
-            'nivel_risco': nivel,
-            'cor_alerta': cor,
+            'taxaIncidencia': float(prediction), 
+            'risco': nivel,                      
+            'corAlerta': cor,
             'status': 'sucesso'
         })
 
     except Exception as e:
+        print(f"ERRO NA PREDIÇÃO: {str(e)}")
         return jsonify({'erro': f"Falha na predição: {str(e)}"}), 400
 
 if __name__ == '__main__':
