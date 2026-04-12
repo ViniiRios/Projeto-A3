@@ -7,6 +7,12 @@ public class AreaResponseDTO {
     private String risco;
     private double taxaIncidencia;
 
+    public AreaResponseDTO(String risco, double taxaIncidencia) {
+    this.risco = risco;
+    this.taxaIncidencia = taxaIncidencia;
+    
+    }
+
     public AreaResponseDTO() {}
 
     public AreaResponseDTO(Long id, String nome, String risco, double taxaIncidencia) {
