@@ -187,13 +187,16 @@ def modulo_dashboard():
         st.markdown("---")
 
         if btn_predicao:
-            # Integração com Spring Boot
             url_java = "http://localhost:8080/api/areas/calcular-risco"
             payload = {
-                "temperatura": temp_input, "chuva": precip_input,
-                "numeroCasos": casos_lag1, "casosLag2": casos_lag2,
-                "populacao": populacao, "mes": datetime.now().month, "ano": datetime.now().year
-            }
+                        "temperatura": temp_input, 
+                        "chuva": precip_input,
+                        "numeroCasos": casos_lag1,
+                        "casosLag2": casos_lag2,
+                        "populacao": populacao, 
+                        "mes": datetime.now().month, 
+                        "ano": datetime.now().year
+                    }
 
             with st.spinner("Conectando ao cluster Java e processando IA..."):
                 try:
@@ -203,7 +206,6 @@ def modulo_dashboard():
                         nivel_risco = res.get('risco', 'INDETERMINADO').upper()
                         taxa = res.get('taxaIncidencia', 0.0)
 
-                        # Mapeamento semântico de cores
                         cores = {"ALERTA MÁXIMO": "#B91C1C", "RISCO MODERADO": "#D97706", "RISCO BAIXO": "#15803D"}
                         cor_fundo = cores.get(nivel_risco, "#1E3A8A")
 

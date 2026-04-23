@@ -14,7 +14,9 @@ public class EpidemiologiaService {
     private IAIntegrationService iaService;
 
     public AreaResponseDTO calcularRiscoArea(AreaRequestDTO request) {
-        double taxaIncidencia = (double) request.getNumeroCasos() / request.getPopulacao() * 100000;
+        double casos = (double) request.getNumeroCasos();
+        double pop = (double) request.getPopulacao();
+        double taxaIncidencia = (casos / pop) * 100000.0;
 
         IAPredictionRequest iaRequest = new IAPredictionRequest(
             request.getMes(),             
@@ -26,7 +28,8 @@ public class EpidemiologiaService {
             request.getChuva(),           
             request.getChuva() - 50,
             1012.0,
-            1011.0
+            1011.0,
+            request.getPopulacao()
         );
 
         IAPredictionResponse previsao = iaService.obterPrevisaoDaIA(iaRequest);
