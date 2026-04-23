@@ -6,7 +6,6 @@ import com.systemvigiasus.monitoramento.dto.AreaRequestDTO;
 import com.systemvigiasus.monitoramento.dto.AreaResponseDTO;
 import com.systemvigiasus.monitoramento.dto.IAPredictionRequest;
 import com.systemvigiasus.monitoramento.dto.IAPredictionResponse;
-import java.time.LocalDate;
 
 @Service
 public class EpidemiologiaService {
@@ -35,7 +34,7 @@ public class EpidemiologiaService {
         return new AreaResponseDTO(
             request.getId(),
             request.getNome(),
-            previsao.nivel_risco(),
+            previsao.risco(),
             taxaIncidencia
         );
     }

@@ -1,8 +1,11 @@
 package com.systemvigiasus.monitoramento.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record IAPredictionResponse(
-    int casos_previstos,
-    String nivel_risco,
-    String cor_alerta,
+    double taxaIncidencia,
+    String risco,
+    String corAlerta,
     String status
 ) {}

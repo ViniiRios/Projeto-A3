@@ -26,38 +26,57 @@ def predict():
         dados_brutos = request.get_json()
         print(f"DEBUG - Recebido do Java: {dados_brutos}")
 
+        temp_bruta = dados_brutos.get('temperatura', 25.0)
+        chuva_bruta = dados_brutos.get('chuva', 0.0)
+        casos_brutos = dados_brutos.get('numeroCasos', 0)
+        
+        temp = float(temp_bruta) if temp_bruta is not None else 25.0
+        chuva = float(chuva_bruta) if chuva_bruta is not None else 0.0
+        casos = float(casos_brutos) if casos_brutos is not None else 0.0
+
         dados_traduzidos = {
-            'TEMP_MEDIA_lag1': dados_brutos.get('temperatura'),
-            'PRECIPITACAO_lag1': dados_brutos.get('chuva'),
-            'CASOS_lag1': dados_brutos.get('numeroCasos'),
+            'mes': float(dados_brutos.get('mes', 4)),
+            'ano': float(dados_brutos.get('ano', 2026)),
+            'casos_lag1': casos,
+            'casos_lag2': float(dados_brutos.get('casosLag2', 0)),
+            'TEMP_MEDIA_lag1': temp,
+            'PRECIPITACAO_lag1': chuva,
+            'TEMP_MEDIA_lag2': temp - 2,
+            'PRECIPITACAO_lag2': chuva - 50 if chuva > 50 else 0,
+            'PRESSAO_MEDIA_lag1': 1012.0,
+            'PRESSAO_MEDIA_lag2': 1011.0
         }
         
         input_df = pd.DataFrame([dados_traduzidos], columns=MODEL_FEATURES)
+        input_df = input_df.fillna(0).astype(float)
         
-        prediction = xg_model.predict(input_df)[0]
+        prediction_raw = xg_model.predict(input_df)[0]
         
-        if prediction < 5.0:
-            prediction = (dados_traduzidos['TEMP_MEDIA_lag1'] * 50) + (dados_traduzidos['PRECIPITACAO_lag1'] * 1)
+        if prediction_raw < 5.0:
+            prediction = (temp * 50) + (chuva * 1)
+        else:
+            prediction = prediction_raw
     
         if prediction >= LIMITE_RISCO_ALTO:
-            nivel = "ALERTA MÁXIMO"
-            cor = "RED"
+            nivel, cor = "ALERTA MÁXIMO", "RED"
         elif prediction >= LIMITE_RISCO_MEDIO:
-            nivel = "RISCO MODERADO"
-            cor = "ORANGE"
+            nivel, cor = "RISCO MODERADO", "ORANGE"
         else:
-            nivel = "RISCO BAIXO"
-            cor = "GREEN"
+            nivel, cor = "RISCO BAIXO", "GREEN"
+            
+        print(f"DEBUG - Predição final: {prediction} ({nivel})")
+
         return jsonify({
-            'taxaIncidencia': float(prediction), 
-            'risco': nivel,                      
-            'corAlerta': cor,
-            'status': 'sucesso'
+            "taxaIncidencia": float(prediction),
+            "risco": str(nivel),
+            "corAlerta": str(cor),
+            "status": "sucesso"
         })
 
     except Exception as e:
-        print(f"ERRO NA PREDIÇÃO: {str(e)}")
-        return jsonify({'erro': f"Falha na predição: {str(e)}"}), 400
+        import traceback
+        print(f"ERRO CRÍTICO NO PYTHON:\n{traceback.format_exc()}")
+        return jsonify({'erro': str(e)}), 400
 
 if __name__ == '__main__':
     # Roda na porta 5000 para não conflitar com o Java (8080)
