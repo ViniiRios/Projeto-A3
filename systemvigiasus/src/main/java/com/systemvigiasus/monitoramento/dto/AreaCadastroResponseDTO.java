@@ -1,6 +1,6 @@
-package com.systemvigiasus.monitoramento.domain;
+package com.systemvigiasus.monitoramento.dto;
 
-public class Area {
+public class AreaCadastroResponseDTO {
 
     private Long id;
     private String nome;
@@ -10,11 +10,11 @@ public class Area {
     private Integer populacaoReferencia;
     private String status;
 
-    public Area() {
+    public AreaCadastroResponseDTO() {
     }
 
-    public Area(Long id, String nome, String unidadeSaude, String bairro,
-                String regionalOuDistrito, Integer populacaoReferencia, String status) {
+    public AreaCadastroResponseDTO(Long id, String nome, String unidadeSaude, String bairro,
+                                   String regionalOuDistrito, Integer populacaoReferencia, String status) {
         this.id = id;
         this.nome = nome;
         this.unidadeSaude = unidadeSaude;

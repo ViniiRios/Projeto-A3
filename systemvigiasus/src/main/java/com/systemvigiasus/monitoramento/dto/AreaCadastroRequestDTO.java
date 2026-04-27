@@ -1,8 +1,7 @@
-package com.systemvigiasus.monitoramento.domain;
+package com.systemvigiasus.monitoramento.dto;
 
-public class Area {
+public class AreaCadastroRequestDTO {
 
-    private Long id;
     private String nome;
     private String unidadeSaude;
     private String bairro;
@@ -10,26 +9,17 @@ public class Area {
     private Integer populacaoReferencia;
     private String status;
 
-    public Area() {
+    public AreaCadastroRequestDTO() {
     }
 
-    public Area(Long id, String nome, String unidadeSaude, String bairro,
-                String regionalOuDistrito, Integer populacaoReferencia, String status) {
-        this.id = id;
+    public AreaCadastroRequestDTO(String nome, String unidadeSaude, String bairro,
+                                  String regionalOuDistrito, Integer populacaoReferencia, String status) {
         this.nome = nome;
         this.unidadeSaude = unidadeSaude;
         this.bairro = bairro;
         this.regionalOuDistrito = regionalOuDistrito;
         this.populacaoReferencia = populacaoReferencia;
         this.status = status;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getNome() {
