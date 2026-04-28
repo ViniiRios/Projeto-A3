@@ -14,50 +14,99 @@ MODEL_FEATURES = [
     'PRESSAO_MEDIA_lag1', 'PRESSAO_MEDIA_lag2'
 ]
 
-LIMITE_RISCO_ALTO = 2000
-LIMITE_RISCO_MEDIO = 1000
+LIMITE_RISCO_MEDIO = 100.0
+LIMITE_RISCO_ALTO = 300.0
 
 with open(MODEL_FILENAME, 'rb') as file:
     xg_model = pickle.load(file)
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    data = request.get_json()
+
+    print(f"DEBUG BRUTO: {data}")
+
+    # Tenta pegar o valor de casos de qualquer uma dessas chaves
+    casos = data.get('casos_lag1') or data.get('numeroCasos') or data.get('notificacoes_atual') or 0
+    
+    # Tenta pegar a população
+    populacao = data.get('populacao') or 200000
+    
+    # Converte para float para garantir que a conta não zere
+    casos = float(casos)
+    populacao = float(populacao)
+
+    # CÁLCULO DA TAXA (AQUI NÃO TEM ERRO)
+    if populacao > 0:
+        taxa_calculada = (casos * 100000.0) / populacao
+    else:
+        taxa_calculada = 0.0
+
+    print(f"DEBUG CALCULO: Casos: {casos}, Pop: {populacao}, Taxa: {taxa_calculada}")
+
     try:
-        dados_brutos = request.get_json()
-        print(f"DEBUG - Recebido do Java: {dados_brutos}")
+        print(f"DEBUG - Recebido: {data}")
+
+        temp_bruta = data.get('temperatura', 25.0)
+        chuva_bruta = data.get('chuva', 0.0)
+        casos_brutos = data.get('numeroCasos', 0)
+        notificacoes_atual = int(data.get('casos_lag1', 0))
+        populacao = int(data.get('populacao', 200000))
+
+        temp = float(temp_bruta) if temp_bruta is not None else 25.0
+        chuva = float(chuva_bruta) if chuva_bruta is not None else 0.0
+        casos = float(casos_brutos) if casos_brutos is not None else 0.0
 
         dados_traduzidos = {
-            'TEMP_MEDIA_lag1': dados_brutos.get('temperatura'),
-            'PRECIPITACAO_lag1': dados_brutos.get('chuva'),
-            'CASOS_lag1': dados_brutos.get('numeroCasos'),
+            'mes': float(data.get('mes', 4)),
+            'ano': float(data.get('ano', 2026)),
+            'casos_lag1': casos,
+            'casos_lag2': float(data.get('casosLag2', 0)),
+            'TEMP_MEDIA_lag1': temp,
+            'PRECIPITACAO_lag1': chuva,
+            'TEMP_MEDIA_lag2': temp - 2,
+            'PRECIPITACAO_lag2': chuva - 50 if chuva > 50 else 0,
+            'PRESSAO_MEDIA_lag1': 1012.0,
+            'PRESSAO_MEDIA_lag2': 1011.0
         }
         
         input_df = pd.DataFrame([dados_traduzidos], columns=MODEL_FEATURES)
+        input_df = input_df.fillna(0).astype(float)
         
-        prediction = xg_model.predict(input_df)[0]
+        prediction = 0.0
+
+        prediction_raw = xg_model.predict(input_df)[0]
         
-        if prediction < 5.0:
-            prediction = (dados_traduzidos['TEMP_MEDIA_lag1'] * 50) + (dados_traduzidos['PRECIPITACAO_lag1'] * 1)
+        if populacao > 0:
+            taxa_calculada = (notificacoes_atual / populacao) * 100000
+        else:
+            taxa_calculada = 0.0
+
+        if prediction_raw < 5.0:
+            prediction = taxa_calculada
+        else:
+            prediction = prediction_raw
     
         if prediction >= LIMITE_RISCO_ALTO:
-            nivel = "ALERTA MÁXIMO"
-            cor = "RED"
+            nivel, cor = "ALERTA MÁXIMO", "RED"
         elif prediction >= LIMITE_RISCO_MEDIO:
-            nivel = "RISCO MODERADO"
-            cor = "ORANGE"
+            nivel, cor = "RISCO MODERADO", "ORANGE"
         else:
-            nivel = "RISCO BAIXO"
-            cor = "GREEN"
+            nivel, cor = "RISCO BAIXO", "GREEN"
+            
+        print(f"DEBUG - Predição final: {prediction} ({nivel})")
+
         return jsonify({
-            'taxaIncidencia': float(prediction), 
-            'risco': nivel,                      
-            'corAlerta': cor,
-            'status': 'sucesso'
+            "taxaIncidencia": float(prediction),
+            "risco": str(nivel),
+            "corAlerta": str(cor),
+            "status": "sucesso"
         })
 
     except Exception as e:
-        print(f"ERRO NA PREDIÇÃO: {str(e)}")
-        return jsonify({'erro': f"Falha na predição: {str(e)}"}), 400
+        import traceback
+        print(f"ERRO CRÍTICO NO PYTHON:\n{traceback.format_exc()}")
+        return jsonify({'erro': str(e)}), 400
 
 if __name__ == '__main__':
     # Roda na porta 5000 para não conflitar com o Java (8080)

@@ -17,21 +17,21 @@ import com.systemvigiasus.monitoramento.dto.AreaCadastroResponseDTO;
 import com.systemvigiasus.monitoramento.dto.AreaRequestDTO;
 import com.systemvigiasus.monitoramento.dto.AreaResponseDTO;
 import com.systemvigiasus.monitoramento.service.AreaCadastroService;
-import com.systemvigiasus.monitoramento.service.AreaService;
+import com.systemvigiasus.monitoramento.service.EpidemiologiaService;
 
 @RestController
 @RequestMapping("/api/areas")
 public class AreaController {
 
     @Autowired
-    private AreaService areaService;
+    private EpidemiologiaService epidemiologiaService;
 
     @Autowired
     private AreaCadastroService areaCadastroService;
 
     @PostMapping("/calcular-risco")
     public ResponseEntity<AreaResponseDTO> calcularRisco(@RequestBody AreaRequestDTO request) {
-        AreaResponseDTO response = areaService.obterDetalhesDaArea(request);
+        AreaResponseDTO response = epidemiologiaService.calcularRiscoArea(request);
         return ResponseEntity.ok(response);
     }
 

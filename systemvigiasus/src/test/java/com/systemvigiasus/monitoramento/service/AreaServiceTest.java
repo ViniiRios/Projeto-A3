@@ -1,40 +1,41 @@
 package com.systemvigiasus.monitoramento.service;
 
-import com.systemvigiasus.monitoramento.client.IAClient;
-import com.systemvigiasus.monitoramento.dto.AreaRequestDTO;
-import com.systemvigiasus.monitoramento.dto.AreaResponseDTO;
-import com.systemvigiasus.monitoramento.dto.RiscoResponseDTO;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.systemvigiasus.monitoramento.client.IAClient;
+import com.systemvigiasus.monitoramento.dto.AreaRequestDTO;
+import com.systemvigiasus.monitoramento.dto.AreaResponseDTO;
+import com.systemvigiasus.monitoramento.dto.RiscoResponseDTO;
+
 @ExtendWith(MockitoExtension.class)
-
-public class AreaServiceTest {
-
-    @InjectMocks
-    private AreaService areaService; 
+class AreaServiceTest {
 
     @Mock
-    private IAClient iaClient; 
+    private IAClient iaClient;
+
+    @InjectMocks
+    private AreaService areaService;
 
     @Test
-    void deveRetornarRiscoAltoQuandoCondicoesFavoraveis() {
-        AreaRequestDTO request = new AreaRequestDTO(31.5, 180.0, 450); 
-        RiscoResponseDTO respostaIA = new RiscoResponseDTO("ALERTA MÁXIMO", 2800.0);
+    void deveProcessarPredicaoComSucesso() {
+        AreaRequestDTO request = new AreaRequestDTO();
+        RiscoResponseDTO mockRisco = new RiscoResponseDTO("RISCO BAIXO", 10.5);
         
-        when(iaClient.chamarMotorIA(any())).thenReturn(respostaIA);
+        when(iaClient.chamarMotorIA(any())).thenReturn(mockRisco);
 
         AreaResponseDTO resultado = areaService.processarPredicao(request);
 
-        assertNotNull(resultado);
-        assertEquals("ALERTA MÁXIMO", resultado.getRisco());
-        assertTrue(resultado.getTaxaIncidencia() > 2000);
-        verify(iaClient, times(1)).chamarMotorIA(any());
+        assertEquals("RISCO BAIXO", resultado.getRisco());
+        assertEquals(10.5, resultado.getTaxaIncidencia());
+        verify(iaClient).chamarMotorIA(request);
     }
 }
