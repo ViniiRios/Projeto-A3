@@ -22,6 +22,7 @@ public class AreaCadastroService {
     public AreaCadastroResponseDTO cadastrarArea(AreaCadastroRequestDTO request) {
         Area area = new Area(
                 null,
+                request.getCodigoArea(),
                 request.getNome(),
                 request.getUnidadeSaude(),
                 request.getBairro(),
@@ -50,6 +51,7 @@ public class AreaCadastroService {
     private AreaCadastroResponseDTO converterParaResponse(Area area) {
         return new AreaCadastroResponseDTO(
                 area.getId(),
+                area.getCodigoArea(),
                 area.getNome(),
                 area.getUnidadeSaude(),
                 area.getBairro(),

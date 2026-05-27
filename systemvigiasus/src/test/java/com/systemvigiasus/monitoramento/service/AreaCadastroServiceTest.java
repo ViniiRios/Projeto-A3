@@ -31,6 +31,7 @@ class AreaCadastroServiceTest {
     @Test
     void deveCadastrarAreaComIdGerado() {
         AreaCadastroRequestDTO request = new AreaCadastroRequestDTO(
+                "000",
                 "Área Centro Sul 1",
                 "Centro de Saúde Funcionários",
                 "Funcionários",
@@ -41,6 +42,7 @@ class AreaCadastroServiceTest {
 
         Area areaSalva = new Area(
                 1L,
+                request.getCodigoArea(),
                 request.getNome(),
                 request.getUnidadeSaude(),
                 request.getBairro(),
@@ -56,6 +58,7 @@ class AreaCadastroServiceTest {
         assertNotNull(response);
         assertNotNull(response.getId());
         assertEquals(1L, response.getId());
+        assertEquals("000", response.getCodigoArea());
         assertEquals("Área Centro Sul 1", response.getNome());
         assertEquals("Centro de Saúde Funcionários", response.getUnidadeSaude());
         assertEquals("Funcionários", response.getBairro());
@@ -68,6 +71,7 @@ class AreaCadastroServiceTest {
     void deveListarAreasCadastradas() {
         Area area = new Area(
                 1L,
+                "001",
                 "Área Barreiro 2",
                 "Centro de Saúde Tirol",
                 "Tirol",
@@ -82,6 +86,7 @@ class AreaCadastroServiceTest {
 
         assertNotNull(areas);
         assertEquals(1, areas.size());
+        assertEquals("001", areas.get(0).getCodigoArea());
         assertEquals("Área Barreiro 2", areas.get(0).getNome());
     }
 
@@ -89,6 +94,7 @@ class AreaCadastroServiceTest {
     void deveBuscarAreaPorIdExistente() {
         Area area = new Area(
                 1L,
+                "002",
                 "Área Venda Nova 1",
                 "Centro de Saúde Mantiqueira",
                 "Mantiqueira",
@@ -103,6 +109,7 @@ class AreaCadastroServiceTest {
 
         assertNotNull(encontrada);
         assertEquals(1L, encontrada.getId());
+        assertEquals("002", encontrada.getCodigoArea());
         assertEquals("Área Venda Nova 1", encontrada.getNome());
     }
 

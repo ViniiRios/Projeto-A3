@@ -15,6 +15,9 @@ public class Area {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "codigo_area", unique = true)
+    private String codigoArea;
+
     @Column(nullable = false)
     private String nome;
 
@@ -36,9 +39,10 @@ public class Area {
     public Area() {
     }
 
-    public Area(Long id, String nome, String unidadeSaude, String bairro,
+    public Area(Long id, String codigoArea, String nome, String unidadeSaude, String bairro,
                 String regionalOuDistrito, Integer populacaoReferencia, String status) {
         this.id = id;
+        this.codigoArea = codigoArea;
         this.nome = nome;
         this.unidadeSaude = unidadeSaude;
         this.bairro = bairro;
@@ -53,6 +57,14 @@ public class Area {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getCodigoArea() {
+        return codigoArea;
+    }
+
+    public void setCodigoArea(String codigoArea) {
+        this.codigoArea = codigoArea;
     }
 
     public String getNome() {
