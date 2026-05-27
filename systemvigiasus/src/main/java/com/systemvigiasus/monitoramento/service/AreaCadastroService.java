@@ -1,28 +1,27 @@
 package com.systemvigiasus.monitoramento.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.systemvigiasus.monitoramento.domain.Area;
 import com.systemvigiasus.monitoramento.dto.AreaCadastroRequestDTO;
 import com.systemvigiasus.monitoramento.dto.AreaCadastroResponseDTO;
+import com.systemvigiasus.monitoramento.repository.AreaRepository;
 
 @Service
 public class AreaCadastroService {
 
-    private final Map<Long, Area> areas = new HashMap<>();
-    private final AtomicLong contadorId = new AtomicLong(1);
+    private final AreaRepository areaRepository;
+
+    public AreaCadastroService(AreaRepository areaRepository) {
+        this.areaRepository = areaRepository;
+    }
 
     public AreaCadastroResponseDTO cadastrarArea(AreaCadastroRequestDTO request) {
-        Long id = contadorId.getAndIncrement();
-
         Area area = new Area(
-                id,
+                null,
                 request.getNome(),
                 request.getUnidadeSaude(),
                 request.getBairro(),
@@ -31,29 +30,21 @@ public class AreaCadastroService {
                 request.getStatus()
         );
 
-        areas.put(id, area);
-
-        return converterParaResponse(area);
+        Area areaSalva = areaRepository.save(area);
+        return converterParaResponse(areaSalva);
     }
 
     public List<AreaCadastroResponseDTO> listarAreas() {
-        List<AreaCadastroResponseDTO> resposta = new ArrayList<>();
-
-        for (Area area : areas.values()) {
-            resposta.add(converterParaResponse(area));
-        }
-
-        return resposta;
+        return areaRepository.findAll()
+                .stream()
+                .map(this::converterParaResponse)
+                .collect(Collectors.toList());
     }
 
     public AreaCadastroResponseDTO buscarPorId(Long id) {
-        Area area = areas.get(id);
-
-        if (area == null) {
-            return null;
-        }
-
-        return converterParaResponse(area);
+        return areaRepository.findById(id)
+                .map(this::converterParaResponse)
+                .orElse(null);
     }
 
     private AreaCadastroResponseDTO converterParaResponse(Area area) {
