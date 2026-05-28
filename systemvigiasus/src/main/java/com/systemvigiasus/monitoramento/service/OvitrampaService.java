@@ -48,6 +48,15 @@ public class OvitrampaService {
                 .orElse(null);
     }
 
+    public List<OvitrampaResponseDTO> buscarPorCodigoArea(String codigoArea) {
+        String codigoNormalizado = normalizarCodigoArea(codigoArea);
+
+        return ovitrampaRepository.findByCodigoArea(codigoNormalizado)
+                .stream()
+                .map(this::converterParaResponse)
+                .collect(Collectors.toList());
+    }
+
     private OvitrampaResponseDTO converterParaResponse(Ovitrampa ovitrampa) {
         return new OvitrampaResponseDTO(
                 ovitrampa.getId(),

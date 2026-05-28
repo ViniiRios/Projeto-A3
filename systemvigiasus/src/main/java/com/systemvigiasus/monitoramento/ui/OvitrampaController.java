@@ -47,4 +47,10 @@ public class OvitrampaController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/area/{codigoArea}")
+    public ResponseEntity<List<OvitrampaResponseDTO>> buscarOvitrampasPorCodigoArea(@PathVariable String codigoArea) {
+        List<OvitrampaResponseDTO> response = ovitrampaService.buscarPorCodigoArea(codigoArea);
+        return ResponseEntity.ok(response);
+    }
 }
