@@ -208,10 +208,52 @@ def preparar_dataframe_ovitrampas(ovitrampas):
     return df
 
 
+def preparar_dataframe_casos_clima(casos_clima):
+    """Organiza os dados epidemiológicos e climáticos para exibição no Streamlit."""
+    df = pd.DataFrame(casos_clima)
+
+    colunas_esperadas = [
+        "periodoReferencia",
+        "regional",
+        "casosDengue",
+        "casosChikungunya",
+        "casosZika",
+        "casosTotal",
+        "temperaturaMedia",
+        "precipitacaoTotal",
+        "populacaoRegional"
+    ]
+
+    colunas_existentes = [col for col in colunas_esperadas if col in df.columns]
+    df = df[colunas_existentes]
+
+    df = df.rename(columns={
+        "periodoReferencia": "Período de Referência",
+        "regional": "Regional",
+        "casosDengue": "Casos de Dengue",
+        "casosChikungunya": "Casos de Chikungunya",
+        "casosZika": "Casos de Zika",
+        "casosTotal": "Casos Totais",
+        "temperaturaMedia": "Temperatura Média",
+        "precipitacaoTotal": "Precipitação Total",
+        "populacaoRegional": "População Regional"
+    })
+
+    return df
+
+
 def formatar_percentual(valor):
     """Formata percentuais numéricos para exibição."""
     try:
         return f"{float(valor):.2f}%".replace(".", ",")
+    except Exception:
+        return str(valor)
+
+
+def formatar_numero(valor):
+    """Formata números inteiros com separador de milhar."""
+    try:
+        return f"{int(valor):,}".replace(",", ".")
     except Exception:
         return str(valor)
 
@@ -285,7 +327,11 @@ def modulo_dashboard():
         
         btn_predicao = st.button("🚀 Executar Motor de Inferência")
 
-    tab_res, tab_met = st.tabs(["Resultados da Análise", "Metodologia Empregada"])
+    tab_res, tab_dados_regionais, tab_met = st.tabs([
+        "Resultados da Análise",
+        "Dados Regionais",
+        "Metodologia Empregada"
+    ])
     
     with tab_res:
         st.subheader("Resumo das Variáveis Inseridas")
@@ -341,6 +387,54 @@ def modulo_dashboard():
                     st.error(f"⚠️ Motor Backend Indisponível. Certifique-se de que o Java (porta 8080) está rodando. Detalhes: {e}")
         else:
             st.info("Aguardando execução. Ajuste os parâmetros na barra lateral e clique em 'Executar Motor de Inferência'.")
+
+    with tab_dados_regionais:
+        st.markdown("### 🌎 Dados Epidemiológicos e Climáticos Regionais")
+        st.caption(
+            "Consulta dos registros importados na tabela `casos_clima`, contendo casos por agravo, "
+            "população regional, temperatura média e precipitação total do período analisado."
+        )
+
+        casos_clima = buscar_dados_backend(
+            "/api/casos-clima",
+            "Não foi possível carregar os dados epidemiológicos e climáticos."
+        )
+
+        if casos_clima is None:
+            st.info("Aguardando conexão com o backend para exibir os dados regionais.")
+        elif len(casos_clima) == 0:
+            st.warning("Nenhum registro de casos e clima foi encontrado no banco de dados.")
+        else:
+            df_casos_clima = preparar_dataframe_casos_clima(casos_clima)
+
+            total_regionais = len(df_casos_clima)
+            maior_total_casos = 0
+            regional_maior_casos = "Não identificado"
+            periodo_referencia = "Não informado"
+
+            if "Casos Totais" in df_casos_clima.columns:
+                df_casos_clima["Casos Totais"] = pd.to_numeric(df_casos_clima["Casos Totais"], errors="coerce")
+                maior_total_casos = int(df_casos_clima["Casos Totais"].max())
+
+                linha_maior_casos = df_casos_clima.loc[df_casos_clima["Casos Totais"].idxmax()]
+                regional_maior_casos = linha_maior_casos.get("Regional", "Não identificado")
+
+            if "Período de Referência" in df_casos_clima.columns:
+                periodo_referencia = df_casos_clima["Período de Referência"].iloc[0]
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Regionais analisadas", total_regionais)
+            c2.metric("Maior total de casos", formatar_numero(maior_total_casos))
+            c3.metric("Regional com maior registro", regional_maior_casos)
+
+            st.markdown(f"**Período de referência:** `{periodo_referencia}`")
+            st.info(
+                "Observação: nesta versão, temperatura média e precipitação total representam o cenário "
+                "climático médio do período analisado. Os casos e a população variam por regional."
+            )
+
+            st.markdown("#### Base epidemiológica e climática por regional")
+            st.dataframe(df_casos_clima, use_container_width=True)
 
     with tab_met:
         st.markdown("### Fundamentação Teórica")
