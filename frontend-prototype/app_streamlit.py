@@ -7,6 +7,18 @@ from datetime import datetime
 
 API_BASE_URL = "http://localhost:8080"
 
+REGIONAIS = [
+    "BARREIRO",
+    "CENTRO-SUL",
+    "LESTE",
+    "NORDESTE",
+    "NOROESTE",
+    "NORTE",
+    "OESTE",
+    "PAMPULHA",
+    "VENDA NOVA"
+]
+
 st.set_page_config(
     page_title="VigiA-SUS | Sistema Preditivo",
     page_icon="🦠",
@@ -16,10 +28,8 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* 1. Importação de Fonte Personalizada (Montserrat) */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
     
-    /* 2. Aplicação Global e Cor de Fundo */
     [data-testid="stAppViewContainer"] {
         background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 100%) !important;
         background-attachment: fixed;
@@ -29,16 +39,15 @@ st.markdown("""
         background: rgba(0,0,0,0) !important;
     }
     
-    /* 3. Customização da Barra Lateral (Sidebar) */
     [data-testid="stSidebar"] {
         background-color: #F0F4F8 !important;
         border-right: 2px solid #E2E8F0;
     }
+
     [data-testid="stSidebar"] * {
         font-size: 16px !important;
     }
     
-    /* 4. Títulos e Logo de Login */
     .logo-login { 
         color: #1E3A8A; 
         font-weight: 900; 
@@ -64,7 +73,6 @@ st.markdown("""
         line-height: 1.2;
     }
     
-    /* 5. Destaque para os Labels */
     label {
         font-size: 1.15rem !important;
         color: #1E293B !important;
@@ -72,7 +80,6 @@ st.markdown("""
         margin-bottom: 8px !important;
     }
     
-    /* 6. Caixas de Input */
     div[data-baseweb="input"], div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
         border: 1px solid #CBD5E1 !important;
@@ -86,7 +93,6 @@ st.markdown("""
         box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
     }
     
-    /* 7. Botões */
     div.stButton > button { 
         background-color: #1E3A8A !important;
         color: white; 
@@ -99,13 +105,13 @@ st.markdown("""
         border: none;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
+
     div.stButton > button:hover { 
         background-color: #1D4ED8; 
         transform: translateY(-2px); 
         box-shadow: 0 8px 12px rgba(0,0,0,0.15);
     }
     
-    /* 8. Cards de Resultado de Risco */
     .status-box { 
         padding: 35px; 
         border-radius: 16px; 
@@ -122,13 +128,10 @@ if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 if 'user_role' not in st.session_state:
     st.session_state['user_role'] = ""
-if 'areas_cadastradas' not in st.session_state:
-    st.session_state['areas_cadastradas'] = []
 
 # --- 3. FUNÇÕES AUXILIARES DE INTEGRAÇÃO ---
 
 def buscar_dados_backend(endpoint, mensagem_erro):
-    """Busca dados no backend Java/Spring Boot."""
     try:
         response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=10)
 
@@ -143,11 +146,41 @@ def buscar_dados_backend(endpoint, mensagem_erro):
         return None
 
 
+def enviar_dados_backend(endpoint, payload, mensagem_erro):
+    try:
+        response = requests.post(f"{API_BASE_URL}{endpoint}", json=payload, timeout=10)
+
+        if response.status_code in [200, 201]:
+            return response.json()
+
+        st.error(f"{mensagem_erro} Código HTTP: {response.status_code}. Resposta: {response.text}")
+        return None
+
+    except Exception as e:
+        st.error(f"{mensagem_erro} Verifique se o backend Java está rodando na porta 8080. Detalhes: {e}")
+        return None
+
+
+def alterar_status_area(id_area, acao):
+    try:
+        response = requests.put(f"{API_BASE_URL}/api/areas/{id_area}/{acao}", timeout=10)
+
+        if response.status_code == 200:
+            return response.json()
+
+        st.error(f"Não foi possível alterar o status da área. Código HTTP: {response.status_code}")
+        return None
+
+    except Exception as e:
+        st.error(f"Erro ao alterar status da área. Verifique se o backend está rodando. Detalhes: {e}")
+        return None
+
+
 def preparar_dataframe_areas(areas):
-    """Organiza os dados de áreas para exibição no Streamlit."""
     df = pd.DataFrame(areas)
 
     colunas_esperadas = [
+        "id",
         "codigoArea",
         "bairro",
         "nome",
@@ -161,6 +194,7 @@ def preparar_dataframe_areas(areas):
     df = df[colunas_existentes]
 
     df = df.rename(columns={
+        "id": "ID",
         "codigoArea": "Código da Área",
         "bairro": "Bairro",
         "nome": "Identificação",
@@ -179,7 +213,6 @@ def preparar_dataframe_areas(areas):
 
 
 def preparar_dataframe_ovitrampas(ovitrampas):
-    """Organiza os dados de ovitrampas para exibição no Streamlit."""
     df = pd.DataFrame(ovitrampas)
 
     colunas_esperadas = [
@@ -209,7 +242,6 @@ def preparar_dataframe_ovitrampas(ovitrampas):
 
 
 def preparar_dataframe_casos_clima(casos_clima):
-    """Organiza os dados epidemiológicos e climáticos para exibição no Streamlit."""
     df = pd.DataFrame(casos_clima)
 
     colunas_esperadas = [
@@ -243,7 +275,6 @@ def preparar_dataframe_casos_clima(casos_clima):
 
 
 def formatar_percentual(valor):
-    """Formata percentuais numéricos para exibição."""
     try:
         return f"{float(valor):.2f}%".replace(".", ",")
     except Exception:
@@ -251,7 +282,6 @@ def formatar_percentual(valor):
 
 
 def formatar_numero(valor):
-    """Formata números inteiros com separador de milhar."""
     try:
         return f"{int(valor):,}".replace(",", ".")
     except Exception:
@@ -259,7 +289,6 @@ def formatar_numero(valor):
 
 
 def montar_opcoes_areas(areas):
-    """Monta opções legíveis para seleção de área."""
     df = pd.DataFrame(areas)
 
     if df.empty or "codigoArea" not in df.columns:
@@ -269,17 +298,40 @@ def montar_opcoes_areas(areas):
 
     opcoes = []
     for _, row in df.iterrows():
+        id_area = row.get("id", "")
         codigo = row.get("codigoArea", "")
         bairro = row.get("bairro", "")
         regional = row.get("regionalOuDistrito", "")
-        opcoes.append(f"{codigo} - {bairro} ({regional})")
+        status = row.get("status", "")
+        opcoes.append(f"{id_area} | {codigo} - {bairro} ({regional}) [{status}]")
 
     return opcoes
+
+
+def extrair_id_area(opcao_area):
+    try:
+        return int(opcao_area.split("|")[0].strip())
+    except Exception:
+        return None
+
+
+def extrair_codigo_area(opcao_area):
+    try:
+        parte_codigo = opcao_area.split("|")[1].split("-")[0].strip()
+        return parte_codigo
+    except Exception:
+        return ""
+
+
+def extrair_status_area(opcao_area):
+    try:
+        return opcao_area.split("[")[-1].replace("]", "").strip()
+    except Exception:
+        return ""
 
 # --- 4. MÓDULOS DO SISTEMA ---
 
 def modulo_login():
-    """Tela de autenticação do sistema."""
     st.markdown('<h1 class="logo-login">VigiA-SUS</h1>', unsafe_allow_html=True)
     st.markdown('<p class="logo-sub">Plataforma de Inteligência e Monitoramento Epidemiológico</p>', unsafe_allow_html=True)
     
@@ -311,7 +363,6 @@ def modulo_login():
 
 
 def modulo_dashboard():
-    """Painel principal de predição integrado ao backend Java/API de IA em Python."""
     st.markdown('<p class="title-dashboard">📊 Módulo Preditivo de Risco</p>', unsafe_allow_html=True)
     st.markdown("Simulação de cenários epidemiológicos utilizando modelos de regressão validados no backend.")
 
@@ -448,17 +499,17 @@ def modulo_dashboard():
 
 
 def modulo_cadastro():
-    """Tela de gestão territorial com consulta real de áreas, ovitrampas e cadastro manual MVP."""
     st.markdown('<p class="title-dashboard">📂 Gestão Territorial de Saúde</p>', unsafe_allow_html=True)
     st.markdown(
-        "Consulta e acompanhamento das áreas monitoradas pelo sistema, com dados persistidos no "
+        "Consulta, cadastro e manutenção das áreas monitoradas pelo sistema, com dados persistidos no "
         "backend Java e no banco PostgreSQL."
     )
 
-    tab_areas, tab_ovitrampas, tab_cadastro = st.tabs([
+    tab_areas, tab_ovitrampas, tab_cadastro, tab_manutencao = st.tabs([
         "Áreas Monitoradas",
         "Ovitrampas por Área",
-        "Cadastro Manual MVP"
+        "Cadastro de Área",
+        "Manutenção de Área"
     ])
 
     with tab_areas:
@@ -517,10 +568,11 @@ def modulo_cadastro():
 
             area_selecionada = st.selectbox(
                 "Selecione uma área monitorada",
-                opcoes_area
+                opcoes_area,
+                key="select_ovitrampas_area"
             )
 
-            codigo_area = area_selecionada.split(" - ")[0].strip()
+            codigo_area = extrair_codigo_area(area_selecionada)
 
             st.markdown(f"**Área selecionada:** `{area_selecionada}`")
 
@@ -553,49 +605,97 @@ def modulo_cadastro():
                 st.dataframe(df_ovitrampas, use_container_width=True)
 
     with tab_cadastro:
-        st.markdown("### 📝 Cadastro Manual de Área")
+        st.markdown("### 📝 Cadastro de Nova Área Monitorada")
         st.info(
-            "Nesta versão, o cadastro manual permanece como recurso MVP temporário. "
-            "A consulta oficial das áreas monitoradas está integrada ao backend e ao banco na aba "
-            "**Áreas Monitoradas**."
+            "O código da área será gerado automaticamente pelo backend, seguindo a sequência já existente. "
+            "Novas áreas são cadastradas inicialmente com status **ATIVA**."
         )
 
-        with st.form("form_area"):
-            st.markdown("**Cadastrar Nova Área de Abrangência**")
+        with st.form("form_area_real"):
             c1, c2 = st.columns(2)
-            nome_area = c1.text_input("Identificação da Área (Ex: Regional Pampulha)")
+
+            nome_area = c1.text_input("Identificação da Área")
             unidade_ref = c1.text_input("Unidade Básica de Saúde (UBS) Referência")
-            bairro = c2.text_input("Bairros Contemplados")
-            pop_area = c2.number_input("Estimativa Populacional", min_value=1, step=100)
-            
-            submit_area = st.form_submit_button("Registrar no Sistema")
+            bairro = c2.text_input("Bairro ou área contemplada")
+            regional = c2.selectbox("Regional ou distrito", REGIONAIS)
+            pop_area = st.number_input("População de referência estimada", min_value=1, step=100)
+
+            submit_area = st.form_submit_button("Cadastrar Área no Banco")
             
             if submit_area:
-                if nome_area and unidade_ref:
-                    nova_area = {
-                        "ID Área": f"AR-{len(st.session_state['areas_cadastradas'])+1:03d}",
-                        "Identificação": nome_area,
-                        "UBS Referência": unidade_ref,
-                        "Bairros": bairro,
-                        "População": pop_area,
-                        "Data de Inclusão": datetime.now().strftime("%d/%m/%Y")
+                if nome_area and unidade_ref and bairro and regional and pop_area:
+                    payload = {
+                        "nome": nome_area,
+                        "unidadeSaude": unidade_ref,
+                        "bairro": bairro,
+                        "regionalOuDistrito": regional,
+                        "populacaoReferencia": pop_area
                     }
-                    st.session_state['areas_cadastradas'].append(nova_area)
-                    st.success(f"Área '{nome_area}' incluída temporariamente na sessão do protótipo.")
+
+                    response = enviar_dados_backend(
+                        "/api/areas",
+                        payload,
+                        "Não foi possível cadastrar a área."
+                    )
+
+                    if response is not None:
+                        st.success(
+                            f"Área cadastrada com sucesso. Código gerado: {response.get('codigoArea')} | "
+                            f"Status: {response.get('status')}"
+                        )
+                        st.info("Acesse a aba **Áreas Monitoradas** e clique em **Atualizar dados das áreas** para visualizar o novo registro.")
                 else:
-                    st.warning("⚠️ Os campos 'Identificação' e 'UBS Referência' são de preenchimento obrigatório.")
+                    st.warning("Preencha todos os campos obrigatórios antes de cadastrar a área.")
 
-        st.markdown("---")
-        st.markdown("**Prévia temporária da sessão atual**")
+    with tab_manutencao:
+        st.markdown("### ⚙️ Manutenção de Área Monitorada")
+        st.caption(
+            "Use esta seção para inativar ou reativar áreas. A área não é excluída do banco; "
+            "apenas deixa de participar do monitoramento ativo quando marcada como INATIVA."
+        )
 
-        if st.session_state['areas_cadastradas']:
-            st.dataframe(pd.DataFrame(st.session_state['areas_cadastradas']), use_container_width=True)
+        areas = buscar_dados_backend(
+            "/api/areas",
+            "Não foi possível carregar a lista de áreas para manutenção."
+        )
+
+        if areas is None or len(areas) == 0:
+            st.warning("Não foi possível carregar as áreas para manutenção.")
         else:
-            st.info("Nenhuma área foi cadastrada manualmente nesta sessão.")
+            opcoes_area = montar_opcoes_areas(areas)
+
+            area_selecionada = st.selectbox(
+                "Selecione uma área para manutenção",
+                opcoes_area,
+                key="select_manutencao_area"
+            )
+
+            id_area = extrair_id_area(area_selecionada)
+            status_area = extrair_status_area(area_selecionada)
+
+            st.markdown(f"**Área selecionada:** `{area_selecionada}`")
+            st.markdown(f"**Status atual:** `{status_area}`")
+
+            c1, c2 = st.columns(2)
+
+            with c1:
+                if st.button("Inativar área selecionada"):
+                    response = alterar_status_area(id_area, "inativar")
+
+                    if response is not None:
+                        st.success(f"Área {response.get('codigoArea')} inativada com sucesso.")
+                        st.info("Atualize a página ou retorne à aba para visualizar o novo status.")
+
+            with c2:
+                if st.button("Reativar área selecionada"):
+                    response = alterar_status_area(id_area, "reativar")
+
+                    if response is not None:
+                        st.success(f"Área {response.get('codigoArea')} reativada com sucesso.")
+                        st.info("Atualize a página ou retorne à aba para visualizar o novo status.")
 
 
 def modulo_importacao():
-    """Tela de submissão e validação de arquivos estruturados (CSV)."""
     st.markdown('<p class="title-dashboard">📥 Integração e Validação de Insumos</p>', unsafe_allow_html=True)
     st.markdown("Módulo destinado à carga de planilhas de ovitrampas e notificações epidemiológicas padronizadas.")
 
@@ -626,7 +726,6 @@ def modulo_importacao():
 
 
 def modulo_admin():
-    """Painel de administração exclusivo para Gestores de TI."""
     st.markdown('<p class="title-dashboard">👥 Administração de Acessos</p>', unsafe_allow_html=True)
     
     st.markdown("**Corpo Técnico Habilitado (Simulação)**")
@@ -639,7 +738,7 @@ def modulo_admin():
     ]
     st.table(pd.DataFrame(membros))
 
-# --- 5. ROTEADOR PRINCIPAL E CONTROLE DE ACESSO (RBAC) ---
+# --- 5. ROTEADOR PRINCIPAL E CONTROLE DE ACESSO ---
 
 if not st.session_state['logged_in']:
     modulo_login()
@@ -663,7 +762,6 @@ else:
         st.markdown("---")
         if st.button("Encerrar Sessão", type="secondary"):
             st.session_state['logged_in'] = False
-            st.session_state['areas_cadastradas'] = []
             st.rerun()
 
     if navegacao == "Dashboard Preditivo":
