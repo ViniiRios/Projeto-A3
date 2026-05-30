@@ -20,15 +20,17 @@ public class AreaCadastroService {
     }
 
     public AreaCadastroResponseDTO cadastrarArea(AreaCadastroRequestDTO request) {
+        String codigoAreaGerado = gerarProximoCodigoArea();
+
         Area area = new Area(
                 null,
-                request.getCodigoArea(),
+                codigoAreaGerado,
                 request.getNome(),
                 request.getUnidadeSaude(),
                 request.getBairro(),
                 request.getRegionalOuDistrito(),
                 request.getPopulacaoReferencia(),
-                request.getStatus()
+                "ATIVA"
         );
 
         Area areaSalva = areaRepository.save(area);
@@ -46,6 +48,39 @@ public class AreaCadastroService {
         return areaRepository.findById(id)
                 .map(this::converterParaResponse)
                 .orElse(null);
+    }
+
+    public AreaCadastroResponseDTO inativarArea(Long id) {
+        return areaRepository.findById(id)
+                .map(area -> {
+                    area.setStatus("INATIVA");
+                    Area areaSalva = areaRepository.save(area);
+                    return converterParaResponse(areaSalva);
+                })
+                .orElse(null);
+    }
+
+    public AreaCadastroResponseDTO reativarArea(Long id) {
+        return areaRepository.findById(id)
+                .map(area -> {
+                    area.setStatus("ATIVA");
+                    Area areaSalva = areaRepository.save(area);
+                    return converterParaResponse(areaSalva);
+                })
+                .orElse(null);
+    }
+
+    private String gerarProximoCodigoArea() {
+        int maiorCodigo = areaRepository.findAll()
+                .stream()
+                .map(Area::getCodigoArea)
+                .filter(codigo -> codigo != null && codigo.trim().matches("\\d+"))
+                .map(String::trim)
+                .mapToInt(Integer::parseInt)
+                .max()
+                .orElse(-1);
+
+        return String.format("%03d", maiorCodigo + 1);
     }
 
     private AreaCadastroResponseDTO converterParaResponse(Area area) {
