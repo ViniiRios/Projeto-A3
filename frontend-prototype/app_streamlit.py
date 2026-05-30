@@ -3,7 +3,9 @@ import pandas as pd
 import requests
 from datetime import datetime
 
-# --- 1. CONFIGURAÇÕES DA PÁGINA E CSS ---
+# --- 1. CONFIGURAÇÕES GERAIS ---
+
+API_BASE_URL = "http://localhost:8080"
 
 st.set_page_config(
     page_title="VigiA-SUS | Sistema Preditivo",
@@ -114,7 +116,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. GERENCIAMENTO DE ESTADO (MEMÓRIA TEMPORÁRIA) ---
+# --- 2. GERENCIAMENTO DE ESTADO ---
 
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -123,7 +125,59 @@ if 'user_role' not in st.session_state:
 if 'areas_cadastradas' not in st.session_state:
     st.session_state['areas_cadastradas'] = []
 
-# --- 3. MÓDULOS DO SISTEMA (TELAS) ---
+# --- 3. FUNÇÕES AUXILIARES DE INTEGRAÇÃO ---
+
+def buscar_dados_backend(endpoint, mensagem_erro):
+    """Busca dados no backend Java/Spring Boot."""
+    try:
+        response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=10)
+
+        if response.status_code == 200:
+            return response.json()
+
+        st.error(f"{mensagem_erro} Código HTTP: {response.status_code}")
+        return None
+
+    except Exception as e:
+        st.error(f"{mensagem_erro} Verifique se o backend Java está rodando na porta 8080. Detalhes: {e}")
+        return None
+
+
+def preparar_dataframe_areas(areas):
+    """Organiza os dados de áreas para exibição no Streamlit."""
+    df = pd.DataFrame(areas)
+
+    colunas_esperadas = [
+        "codigoArea",
+        "bairro",
+        "nome",
+        "regionalOuDistrito",
+        "unidadeSaude",
+        "populacaoReferencia",
+        "status"
+    ]
+
+    colunas_existentes = [col for col in colunas_esperadas if col in df.columns]
+    df = df[colunas_existentes]
+
+    df = df.rename(columns={
+        "codigoArea": "Código da Área",
+        "bairro": "Bairro",
+        "nome": "Identificação",
+        "regionalOuDistrito": "Regional/Distrito",
+        "unidadeSaude": "Unidade de Saúde",
+        "populacaoReferencia": "População de Referência",
+        "status": "Status"
+    })
+
+    if "População de Referência" in df.columns:
+        df["População de Referência"] = df["População de Referência"].apply(
+            lambda valor: f"{int(valor):,}".replace(",", ".") if pd.notnull(valor) else valor
+        )
+
+    return df
+
+# --- 4. MÓDULOS DO SISTEMA ---
 
 def modulo_login():
     """Tela de autenticação do sistema."""
@@ -156,12 +210,12 @@ def modulo_login():
                         
             st.caption("Ambiente de Homologação (MVP) | Contas teste: admin/1234 ou analista/1234")
 
+
 def modulo_dashboard():
-    """Painel principal de predição integrado ao backend Java/ API de IA em Python."""
+    """Painel principal de predição integrado ao backend Java/API de IA em Python."""
     st.markdown('<p class="title-dashboard">📊 Módulo Preditivo de Risco</p>', unsafe_allow_html=True)
     st.markdown("Simulação de cenários epidemiológicos utilizando modelos de regressão validados no backend.")
 
-    # Entradas na Barra Lateral
     with st.sidebar:
         st.markdown("### ☁️ Parâmetros Locais")
         temp_input = st.number_input("Temperatura Média (°C)", min_value=10.0, max_value=45.0, value=25.0, step=0.1)
@@ -174,7 +228,6 @@ def modulo_dashboard():
         
         btn_predicao = st.button("🚀 Executar Motor de Inferência")
 
-    # Área Principal
     tab_res, tab_met = st.tabs(["Resultados da Análise", "Metodologia Empregada"])
     
     with tab_res:
@@ -187,37 +240,46 @@ def modulo_dashboard():
         st.markdown("---")
 
         if btn_predicao:
-            url_java = "http://localhost:8080/api/areas/calcular-risco"
+            url_java = f"{API_BASE_URL}/api/areas/calcular-risco"
             payload = {
-                        "temperatura": temp_input, 
-                        "chuva": precip_input,
-                        "numeroCasos": casos_lag1,
-                        "casosLag2": casos_lag2,
-                        "populacao": populacao, 
-                        "mes": datetime.now().month, 
-                        "ano": datetime.now().year
-                    }
+                "temperatura": temp_input,
+                "chuva": precip_input,
+                "numeroCasos": casos_lag1,
+                "casosLag2": casos_lag2,
+                "populacao": populacao,
+                "mes": datetime.now().month,
+                "ano": datetime.now().year
+            }
 
-            with st.spinner("Conectando ao cluster Java e processando IA..."):
+            with st.spinner("Conectando ao backend Java e processando IA..."):
                 try:
                     response = requests.post(url_java, json=payload, timeout=10)
+
                     if response.status_code == 200:
                         res = response.json()
                         nivel_risco = res.get('risco', 'INDETERMINADO').upper()
                         taxa = res.get('taxaIncidencia', 0.0)
 
-                        cores = {"ALERTA MÁXIMO": "#B91C1C", "RISCO MODERADO": "#D97706", "RISCO BAIXO": "#15803D"}
+                        cores = {
+                            "ALERTA MÁXIMO": "#B91C1C",
+                            "RISCO MODERADO": "#D97706",
+                            "RISCO BAIXO": "#15803D"
+                        }
                         cor_fundo = cores.get(nivel_risco, "#1E3A8A")
 
                         st.markdown(f"""
                             <div class="status-box" style="background-color: {cor_fundo};">
-                                <h2 style="color: white; margin:0; font-size: 32px;">ESTADO IDENTIFICADO: {nivel_risco}</h2>
+                                <h2 style="color: white; margin:0; font-size: 32px;">
+                                    ESTADO IDENTIFICADO: {nivel_risco}
+                                </h2>
                                 <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 10px;">
-                                Taxa de Incidência Calculada: <b>{taxa:.2f}</b> por 100 mil/hab.</p>
+                                    Taxa de Incidência Calculada: <b>{taxa:.2f}</b> por 100 mil/hab.
+                                </p>
                             </div>
                         """, unsafe_allow_html=True)
                     else:
                         st.error(f"Erro na requisição. Código HTTP: {response.status_code}")
+
                 except Exception as e:
                     st.error(f"⚠️ Motor Backend Indisponível. Certifique-se de que o Java (porta 8080) está rodando. Detalhes: {e}")
         else:
@@ -225,43 +287,103 @@ def modulo_dashboard():
 
     with tab_met:
         st.markdown("### Fundamentação Teórica")
-        st.write("A classificação de risco utiliza uma arquitetura híbrida, integrando um backend em **Java 17 (Spring Boot)** para processamento de regras de negócio e cálculo da Taxa de Incidência (casos x 100.000 / população), com um serviço de inteligência artificial em **Python (Flask)** responsável por avaliar a probabilidade de eclosão de vetores baseando-se em variáveis climáticas e séries temporais epidemiológicas.")
+        st.write(
+            "A classificação de risco utiliza uma arquitetura híbrida, integrando um backend em "
+            "**Java 17 (Spring Boot)** para processamento de regras de negócio e cálculo da Taxa de "
+            "Incidência (casos x 100.000 / população), com um serviço de inteligência artificial em "
+            "**Python (Flask)** responsável por avaliar a probabilidade de eclosão de vetores baseando-se "
+            "em variáveis climáticas e séries temporais epidemiológicas."
+        )
+
 
 def modulo_cadastro():
-    """Tela para registro de novas áreas de monitoramento."""
+    """Tela de gestão territorial com consulta real de áreas e cadastro manual MVP."""
     st.markdown('<p class="title-dashboard">📂 Gestão Territorial de Saúde</p>', unsafe_allow_html=True)
-    
-    with st.form("form_area"):
-        st.markdown("**Cadastrar Nova Área de Abrangência**")
-        c1, c2 = st.columns(2)
-        nome_area = c1.text_input("Identificação da Área (Ex: Regional Pampulha)")
-        unidade_ref = c1.text_input("Unidade Básica de Saúde (UBS) Referência")
-        bairro = c2.text_input("Bairros Contemplados")
-        pop_area = c2.number_input("Estimativa Populacional", min_value=1, step=100)
-        
-        submit_area = st.form_submit_button("Registrar no Sistema")
-        
-        if submit_area:
-            if nome_area and unidade_ref:
-                nova_area = {
-                    "ID Área": f"AR-{len(st.session_state['areas_cadastradas'])+1:03d}",
-                    "Identificação": nome_area,
-                    "UBS Referência": unidade_ref,
-                    "Bairros": bairro,
-                    "População": pop_area,
-                    "Data de Inclusão": datetime.now().strftime("%d/%m/%Y")
-                }
-                st.session_state['areas_cadastradas'].append(nova_area)
-                st.success(f"Área '{nome_area}' incluída com sucesso na base de dados temporária.")
-            else:
-                st.warning("⚠️ Os campos 'Identificação' e 'UBS Referência' são de preenchimento obrigatório.")
+    st.markdown(
+        "Consulta e acompanhamento das áreas monitoradas pelo sistema, com dados persistidos no "
+        "backend Java e no banco PostgreSQL."
+    )
 
-    st.markdown("---")
-    st.markdown("**Mapeamento Atual (Registros em Memória)**")
-    if st.session_state['areas_cadastradas']:
-        st.dataframe(pd.DataFrame(st.session_state['areas_cadastradas']), use_container_width=True)
-    else:
-        st.info("Nenhuma área de monitoramento cadastrada na sessão atual.")
+    tab_areas, tab_cadastro = st.tabs(["Áreas Monitoradas", "Cadastro Manual MVP"])
+
+    with tab_areas:
+        st.markdown("### 🗺️ Áreas Monitoradas")
+        st.caption("Dados carregados do backend Java a partir da tabela `areas` no PostgreSQL.")
+
+        if st.button("🔄 Atualizar dados das áreas"):
+            st.rerun()
+
+        areas = buscar_dados_backend(
+            "/api/areas",
+            "Não foi possível carregar as áreas monitoradas."
+        )
+
+        if areas is None:
+            st.info("Aguardando conexão com o backend para exibir as áreas monitoradas.")
+        elif len(areas) == 0:
+            st.warning("Nenhuma área monitorada foi encontrada no banco de dados.")
+        else:
+            df_areas = preparar_dataframe_areas(areas)
+
+            total_areas = len(df_areas)
+            total_ativas = 0
+            total_regionais = 0
+
+            if "Status" in df_areas.columns:
+                total_ativas = df_areas[df_areas["Status"].str.upper() == "ATIVA"].shape[0]
+
+            if "Regional/Distrito" in df_areas.columns:
+                total_regionais = df_areas["Regional/Distrito"].nunique()
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Áreas cadastradas", total_areas)
+            c2.metric("Áreas ativas", total_ativas)
+            c3.metric("Regionais/Distritos", total_regionais)
+
+            st.markdown("#### Base territorial cadastrada")
+            st.dataframe(df_areas, use_container_width=True)
+
+    with tab_cadastro:
+        st.markdown("### 📝 Cadastro Manual de Área")
+        st.info(
+            "Nesta versão, o cadastro manual permanece como recurso MVP temporário. "
+            "A consulta oficial das áreas monitoradas está integrada ao backend e ao banco na aba "
+            "**Áreas Monitoradas**."
+        )
+
+        with st.form("form_area"):
+            st.markdown("**Cadastrar Nova Área de Abrangência**")
+            c1, c2 = st.columns(2)
+            nome_area = c1.text_input("Identificação da Área (Ex: Regional Pampulha)")
+            unidade_ref = c1.text_input("Unidade Básica de Saúde (UBS) Referência")
+            bairro = c2.text_input("Bairros Contemplados")
+            pop_area = c2.number_input("Estimativa Populacional", min_value=1, step=100)
+            
+            submit_area = st.form_submit_button("Registrar no Sistema")
+            
+            if submit_area:
+                if nome_area and unidade_ref:
+                    nova_area = {
+                        "ID Área": f"AR-{len(st.session_state['areas_cadastradas'])+1:03d}",
+                        "Identificação": nome_area,
+                        "UBS Referência": unidade_ref,
+                        "Bairros": bairro,
+                        "População": pop_area,
+                        "Data de Inclusão": datetime.now().strftime("%d/%m/%Y")
+                    }
+                    st.session_state['areas_cadastradas'].append(nova_area)
+                    st.success(f"Área '{nome_area}' incluída temporariamente na sessão do protótipo.")
+                else:
+                    st.warning("⚠️ Os campos 'Identificação' e 'UBS Referência' são de preenchimento obrigatório.")
+
+        st.markdown("---")
+        st.markdown("**Prévia temporária da sessão atual**")
+
+        if st.session_state['areas_cadastradas']:
+            st.dataframe(pd.DataFrame(st.session_state['areas_cadastradas']), use_container_width=True)
+        else:
+            st.info("Nenhuma área foi cadastrada manualmente nesta sessão.")
+
 
 def modulo_importacao():
     """Tela de submissão e validação de arquivos estruturados (CSV)."""
@@ -277,7 +399,7 @@ def modulo_importacao():
                 df = pd.read_csv(arquivo)
                 st.write("Pré-visualização do Lote (Amostra 5 registros):")
                 st.dataframe(df.head(5), use_container_width=True)
-            except Exception as e:
+            except Exception:
                 st.error("Erro na leitura do arquivo. Certifique-se de que é um CSV válido delimitado por vírgulas.")
 
     with c_validacao:
@@ -293,6 +415,7 @@ def modulo_importacao():
             else:
                 st.error("Nenhum lote de dados anexado.")
 
+
 def modulo_admin():
     """Painel de administração exclusivo para Gestores de TI."""
     st.markdown('<p class="title-dashboard">👥 Administração de Acessos</p>', unsafe_allow_html=True)
@@ -307,7 +430,7 @@ def modulo_admin():
     ]
     st.table(pd.DataFrame(membros))
 
-# --- 4. ROTEADOR PRINCIPAL E CONTROLE DE ACESSO (RBAC) ---
+# --- 5. ROTEADOR PRINCIPAL E CONTROLE DE ACESSO (RBAC) ---
 
 if not st.session_state['logged_in']:
     modulo_login()
@@ -319,7 +442,6 @@ else:
         st.info(f"👤 {role}")
         st.markdown("---")
         
-        # Árvore de navegação baseada em perfil (RBAC)
         opcoes_menu = ["Dashboard Preditivo"]
         
         if role == "Gestor de TI":
@@ -335,7 +457,6 @@ else:
             st.session_state['areas_cadastradas'] = []
             st.rerun()
 
-    # Injeção de dependência de interface
     if navegacao == "Dashboard Preditivo":
         modulo_dashboard()
     elif navegacao == "Gestão Territorial":
@@ -345,6 +466,10 @@ else:
     elif navegacao == "Importação de Insumos":
         modulo_importacao()
 
-    # Rodapé Acadêmico
     st.markdown("---")
-    st.markdown(f"<p style='text-align: center; color: #94A3B8; font-size: 12px;'>Projeto Acadêmico - Ciência da Computação | VigiA-SUS MVP v1.0 | {datetime.now().year}</p>", unsafe_allow_html=True)
+    st.markdown(
+        f"<p style='text-align: center; color: #94A3B8; font-size: 12px;'>"
+        f"Projeto Acadêmico - Ciência da Computação | VigiA-SUS MVP v1.0 | {datetime.now().year}"
+        f"</p>",
+        unsafe_allow_html=True
+    )
