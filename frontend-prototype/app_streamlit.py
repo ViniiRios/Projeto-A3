@@ -177,6 +177,63 @@ def preparar_dataframe_areas(areas):
 
     return df
 
+
+def preparar_dataframe_ovitrampas(ovitrampas):
+    """Organiza os dados de ovitrampas para exibição no Streamlit."""
+    df = pd.DataFrame(ovitrampas)
+
+    colunas_esperadas = [
+        "codigoArea",
+        "bairro",
+        "totalArmadilhas",
+        "totalNegativas",
+        "percentualNegativas",
+        "totalPositivas",
+        "percentualPositivas"
+    ]
+
+    colunas_existentes = [col for col in colunas_esperadas if col in df.columns]
+    df = df[colunas_existentes]
+
+    df = df.rename(columns={
+        "codigoArea": "Código da Área",
+        "bairro": "Bairro",
+        "totalArmadilhas": "Total de Armadilhas",
+        "totalNegativas": "Total Negativas",
+        "percentualNegativas": "% Negativas",
+        "totalPositivas": "Total Positivas",
+        "percentualPositivas": "% Positivas"
+    })
+
+    return df
+
+
+def formatar_percentual(valor):
+    """Formata percentuais numéricos para exibição."""
+    try:
+        return f"{float(valor):.2f}%".replace(".", ",")
+    except Exception:
+        return str(valor)
+
+
+def montar_opcoes_areas(areas):
+    """Monta opções legíveis para seleção de área."""
+    df = pd.DataFrame(areas)
+
+    if df.empty or "codigoArea" not in df.columns:
+        return []
+
+    df = df.sort_values("codigoArea")
+
+    opcoes = []
+    for _, row in df.iterrows():
+        codigo = row.get("codigoArea", "")
+        bairro = row.get("bairro", "")
+        regional = row.get("regionalOuDistrito", "")
+        opcoes.append(f"{codigo} - {bairro} ({regional})")
+
+    return opcoes
+
 # --- 4. MÓDULOS DO SISTEMA ---
 
 def modulo_login():
@@ -297,14 +354,18 @@ def modulo_dashboard():
 
 
 def modulo_cadastro():
-    """Tela de gestão territorial com consulta real de áreas e cadastro manual MVP."""
+    """Tela de gestão territorial com consulta real de áreas, ovitrampas e cadastro manual MVP."""
     st.markdown('<p class="title-dashboard">📂 Gestão Territorial de Saúde</p>', unsafe_allow_html=True)
     st.markdown(
         "Consulta e acompanhamento das áreas monitoradas pelo sistema, com dados persistidos no "
         "backend Java e no banco PostgreSQL."
     )
 
-    tab_areas, tab_cadastro = st.tabs(["Áreas Monitoradas", "Cadastro Manual MVP"])
+    tab_areas, tab_ovitrampas, tab_cadastro = st.tabs([
+        "Áreas Monitoradas",
+        "Ovitrampas por Área",
+        "Cadastro Manual MVP"
+    ])
 
     with tab_areas:
         st.markdown("### 🗺️ Áreas Monitoradas")
@@ -342,6 +403,60 @@ def modulo_cadastro():
 
             st.markdown("#### Base territorial cadastrada")
             st.dataframe(df_areas, use_container_width=True)
+
+    with tab_ovitrampas:
+        st.markdown("### 🧪 Monitoramento de Ovitrampas por Área")
+        st.caption(
+            "Consulta dos indicadores entomológicos vinculados às áreas monitoradas. "
+            "Os dados são carregados do endpoint `/api/ovitrampas/area/{codigoArea}`."
+        )
+
+        areas = buscar_dados_backend(
+            "/api/areas",
+            "Não foi possível carregar a lista de áreas para consulta de ovitrampas."
+        )
+
+        if areas is None or len(areas) == 0:
+            st.warning("Não foi possível carregar as áreas para seleção.")
+        else:
+            opcoes_area = montar_opcoes_areas(areas)
+
+            area_selecionada = st.selectbox(
+                "Selecione uma área monitorada",
+                opcoes_area
+            )
+
+            codigo_area = area_selecionada.split(" - ")[0].strip()
+
+            st.markdown(f"**Área selecionada:** `{area_selecionada}`")
+
+            ovitrampas = buscar_dados_backend(
+                f"/api/ovitrampas/area/{codigo_area}",
+                "Não foi possível carregar os dados de ovitrampas para a área selecionada."
+            )
+
+            if ovitrampas is None:
+                st.info("Aguardando retorno do backend para os dados de ovitrampas.")
+            elif len(ovitrampas) == 0:
+                st.warning("Nenhum registro de ovitrampas foi encontrado para esta área.")
+            else:
+                df_ovitrampas = preparar_dataframe_ovitrampas(ovitrampas)
+
+                primeiro_registro = ovitrampas[0]
+
+                total_armadilhas = primeiro_registro.get("totalArmadilhas", 0)
+                total_positivas = primeiro_registro.get("totalPositivas", 0)
+                total_negativas = primeiro_registro.get("totalNegativas", 0)
+                percentual_positivas = primeiro_registro.get("percentualPositivas", 0)
+
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Total de armadilhas", total_armadilhas)
+                c2.metric("Positivas", total_positivas)
+                c3.metric("Negativas", total_negativas)
+                c4.metric("% Positivas", formatar_percentual(percentual_positivas))
+
+                st.markdown("#### Indicadores entomológicos da área")
+                st.dataframe(df_ovitrampas, use_container_width=True)
 
     with tab_cadastro:
         st.markdown("### 📝 Cadastro Manual de Área")
