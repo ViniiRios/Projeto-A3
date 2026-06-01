@@ -19,6 +19,25 @@ REGIONAIS = [
     "VENDA NOVA"
 ]
 
+PERFIS_COM_GESTAO_COMPLETA = [
+    "Gestor de TI",
+    "Gestor Epidemiológico"
+]
+
+PERFIS_COM_GESTAO_CONSULTA = [
+    "Gestor de TI",
+    "Gestor Epidemiológico",
+    "Analista de Dados",
+    "Analista de Vigilância"
+]
+
+PERFIS_COM_IMPORTACAO = [
+    "Gestor de TI",
+    "Gestor Epidemiológico",
+    "Analista de Dados",
+    "Operador de Importação"
+]
+
 st.set_page_config(
     page_title="VigiA-SUS | Sistema Preditivo",
     page_icon="🦠",
@@ -128,8 +147,33 @@ if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 if 'user_role' not in st.session_state:
     st.session_state['user_role'] = ""
+if 'user_name' not in st.session_state:
+    st.session_state['user_name'] = ""
 
 # --- 3. FUNÇÕES AUXILIARES DE INTEGRAÇÃO ---
+
+def autenticar_usuario_backend(username, senha):
+    try:
+        payload = {
+            "username": username,
+            "senha": senha
+        }
+
+        response = requests.post(f"{API_BASE_URL}/api/auth/login", json=payload, timeout=10)
+
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 401:
+            return None
+
+        st.error(f"Erro ao autenticar usuário. Código HTTP: {response.status_code}")
+        return None
+
+    except Exception as e:
+        st.error(f"Não foi possível conectar ao backend de autenticação. Verifique se o Java está rodando na porta 8080. Detalhes: {e}")
+        return None
+
 
 def buscar_dados_backend(endpoint, mensagem_erro):
     try:
@@ -343,23 +387,25 @@ def modulo_login():
             st.markdown("Insira suas credenciais:")
             
             with st.form("form_auth"):
-                username = st.text_input("Usuário (ou E-mail)")
+                username = st.text_input("Usuário")
                 password = st.text_input("Senha", type="password")
                 submit_login = st.form_submit_button("Acessar Plataforma")
                 
                 if submit_login:
-                    if username == "admin" and password == "1234":
-                        st.session_state['logged_in'] = True
-                        st.session_state['user_role'] = "Gestor de TI"
-                        st.rerun()
-                    elif username == "analista" and password == "1234":
-                        st.session_state['logged_in'] = True
-                        st.session_state['user_role'] = "Analista de Dados"
-                        st.rerun()
+                    if not username or not password:
+                        st.warning("Informe usuário e senha para acessar o sistema.")
                     else:
-                        st.error("❌ Credenciais inválidas! Verifique os dados inseridos.")
-                        
-            st.caption("Ambiente de Homologação (MVP) | Contas teste: admin/1234 ou analista/1234")
+                        usuario = autenticar_usuario_backend(username, password)
+
+                        if usuario is not None:
+                            st.session_state['logged_in'] = True
+                            st.session_state['user_role'] = usuario.get("perfil", "")
+                            st.session_state['user_name'] = usuario.get("nome", username)
+                            st.rerun()
+                        else:
+                            st.error("❌ Credenciais inválidas ou usuário inativo.")
+
+            st.caption("Login validado pelo backend e pela tabela de usuários no PostgreSQL.")
 
 
 def modulo_dashboard():
@@ -498,201 +544,230 @@ def modulo_dashboard():
         )
 
 
-def modulo_cadastro():
+def exibir_aba_areas_monitoradas():
+    st.markdown("### 🗺️ Áreas Monitoradas")
+    st.caption("Dados carregados do backend Java a partir da tabela `areas` no PostgreSQL.")
+
+    if st.button("🔄 Atualizar dados das áreas"):
+        st.rerun()
+
+    areas = buscar_dados_backend(
+        "/api/areas",
+        "Não foi possível carregar as áreas monitoradas."
+    )
+
+    if areas is None:
+        st.info("Aguardando conexão com o backend para exibir as áreas monitoradas.")
+    elif len(areas) == 0:
+        st.warning("Nenhuma área monitorada foi encontrada no banco de dados.")
+    else:
+        df_areas = preparar_dataframe_areas(areas)
+
+        total_areas = len(df_areas)
+        total_ativas = 0
+        total_regionais = 0
+
+        if "Status" in df_areas.columns:
+            total_ativas = df_areas[df_areas["Status"].str.upper() == "ATIVA"].shape[0]
+
+        if "Regional/Distrito" in df_areas.columns:
+            total_regionais = df_areas["Regional/Distrito"].nunique()
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Áreas cadastradas", total_areas)
+        c2.metric("Áreas ativas", total_ativas)
+        c3.metric("Regionais/Distritos", total_regionais)
+
+        st.markdown("#### Base territorial cadastrada")
+        st.dataframe(df_areas, use_container_width=True)
+
+
+def exibir_aba_ovitrampas():
+    st.markdown("### 🧪 Monitoramento de Ovitrampas por Área")
+    st.caption(
+        "Consulta dos indicadores entomológicos vinculados às áreas monitoradas. "
+        "Os dados são carregados do endpoint `/api/ovitrampas/area/{codigoArea}`."
+    )
+
+    areas = buscar_dados_backend(
+        "/api/areas",
+        "Não foi possível carregar a lista de áreas para consulta de ovitrampas."
+    )
+
+    if areas is None or len(areas) == 0:
+        st.warning("Não foi possível carregar as áreas para seleção.")
+    else:
+        opcoes_area = montar_opcoes_areas(areas)
+
+        area_selecionada = st.selectbox(
+            "Selecione uma área monitorada",
+            opcoes_area,
+            key="select_ovitrampas_area"
+        )
+
+        codigo_area = extrair_codigo_area(area_selecionada)
+
+        st.markdown(f"**Área selecionada:** `{area_selecionada}`")
+
+        ovitrampas = buscar_dados_backend(
+            f"/api/ovitrampas/area/{codigo_area}",
+            "Não foi possível carregar os dados de ovitrampas para a área selecionada."
+        )
+
+        if ovitrampas is None:
+            st.info("Aguardando retorno do backend para os dados de ovitrampas.")
+        elif len(ovitrampas) == 0:
+            st.warning("Nenhum registro de ovitrampas foi encontrado para esta área.")
+        else:
+            df_ovitrampas = preparar_dataframe_ovitrampas(ovitrampas)
+
+            primeiro_registro = ovitrampas[0]
+
+            total_armadilhas = primeiro_registro.get("totalArmadilhas", 0)
+            total_positivas = primeiro_registro.get("totalPositivas", 0)
+            total_negativas = primeiro_registro.get("totalNegativas", 0)
+            percentual_positivas = primeiro_registro.get("percentualPositivas", 0)
+
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Total de armadilhas", total_armadilhas)
+            c2.metric("Positivas", total_positivas)
+            c3.metric("Negativas", total_negativas)
+            c4.metric("% Positivas", formatar_percentual(percentual_positivas))
+
+            st.markdown("#### Indicadores entomológicos da área")
+            st.dataframe(df_ovitrampas, use_container_width=True)
+
+
+def exibir_aba_cadastro_area():
+    st.markdown("### 📝 Cadastro de Nova Área Monitorada")
+    st.info(
+        "O código da área será gerado automaticamente pelo backend, seguindo a sequência já existente. "
+        "Novas áreas são cadastradas inicialmente com status **ATIVA**."
+    )
+
+    with st.form("form_area_real"):
+        c1, c2 = st.columns(2)
+
+        nome_area = c1.text_input("Identificação da Área")
+        unidade_ref = c1.text_input("Unidade Básica de Saúde (UBS) Referência")
+        bairro = c2.text_input("Bairro ou área contemplada")
+        regional = c2.selectbox("Regional ou distrito", REGIONAIS)
+        pop_area = st.number_input("População de referência estimada", min_value=1, step=100)
+
+        submit_area = st.form_submit_button("Cadastrar Área no Banco")
+        
+        if submit_area:
+            if nome_area and unidade_ref and bairro and regional and pop_area:
+                payload = {
+                    "nome": nome_area,
+                    "unidadeSaude": unidade_ref,
+                    "bairro": bairro,
+                    "regionalOuDistrito": regional,
+                    "populacaoReferencia": pop_area
+                }
+
+                response = enviar_dados_backend(
+                    "/api/areas",
+                    payload,
+                    "Não foi possível cadastrar a área."
+                )
+
+                if response is not None:
+                    st.success(
+                        f"Área cadastrada com sucesso. Código gerado: {response.get('codigoArea')} | "
+                        f"Status: {response.get('status')}"
+                    )
+                    st.info("Acesse a aba **Áreas Monitoradas** e clique em **Atualizar dados das áreas** para visualizar o novo registro.")
+            else:
+                st.warning("Preencha todos os campos obrigatórios antes de cadastrar a área.")
+
+
+def exibir_aba_manutencao_area():
+    st.markdown("### ⚙️ Manutenção de Área Monitorada")
+    st.caption(
+        "Use esta seção para inativar ou reativar áreas. A área não é excluída do banco; "
+        "apenas deixa de participar do monitoramento ativo quando marcada como INATIVA."
+    )
+
+    areas = buscar_dados_backend(
+        "/api/areas",
+        "Não foi possível carregar a lista de áreas para manutenção."
+    )
+
+    if areas is None or len(areas) == 0:
+        st.warning("Não foi possível carregar as áreas para manutenção.")
+    else:
+        opcoes_area = montar_opcoes_areas(areas)
+
+        area_selecionada = st.selectbox(
+            "Selecione uma área para manutenção",
+            opcoes_area,
+            key="select_manutencao_area"
+        )
+
+        id_area = extrair_id_area(area_selecionada)
+        status_area = extrair_status_area(area_selecionada)
+
+        st.markdown(f"**Área selecionada:** `{area_selecionada}`")
+        st.markdown(f"**Status atual:** `{status_area}`")
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            if st.button("Inativar área selecionada"):
+                response = alterar_status_area(id_area, "inativar")
+
+                if response is not None:
+                    st.success(f"Área {response.get('codigoArea')} inativada com sucesso.")
+                    st.info("Atualize a página ou retorne à aba para visualizar o novo status.")
+
+        with c2:
+            if st.button("Reativar área selecionada"):
+                response = alterar_status_area(id_area, "reativar")
+
+                if response is not None:
+                    st.success(f"Área {response.get('codigoArea')} reativada com sucesso.")
+                    st.info("Atualize a página ou retorne à aba para visualizar o novo status.")
+
+
+def modulo_cadastro(role):
     st.markdown('<p class="title-dashboard">📂 Gestão Territorial de Saúde</p>', unsafe_allow_html=True)
     st.markdown(
         "Consulta, cadastro e manutenção das áreas monitoradas pelo sistema, com dados persistidos no "
         "backend Java e no banco PostgreSQL."
     )
 
-    tab_areas, tab_ovitrampas, tab_cadastro, tab_manutencao = st.tabs([
-        "Áreas Monitoradas",
-        "Ovitrampas por Área",
-        "Cadastro de Área",
-        "Manutenção de Área"
-    ])
+    if role in PERFIS_COM_GESTAO_COMPLETA:
+        tab_areas, tab_ovitrampas, tab_cadastro, tab_manutencao = st.tabs([
+            "Áreas Monitoradas",
+            "Ovitrampas por Área",
+            "Cadastro de Área",
+            "Manutenção de Área"
+        ])
 
-    with tab_areas:
-        st.markdown("### 🗺️ Áreas Monitoradas")
-        st.caption("Dados carregados do backend Java a partir da tabela `areas` no PostgreSQL.")
+        with tab_areas:
+            exibir_aba_areas_monitoradas()
 
-        if st.button("🔄 Atualizar dados das áreas"):
-            st.rerun()
+        with tab_ovitrampas:
+            exibir_aba_ovitrampas()
 
-        areas = buscar_dados_backend(
-            "/api/areas",
-            "Não foi possível carregar as áreas monitoradas."
-        )
+        with tab_cadastro:
+            exibir_aba_cadastro_area()
 
-        if areas is None:
-            st.info("Aguardando conexão com o backend para exibir as áreas monitoradas.")
-        elif len(areas) == 0:
-            st.warning("Nenhuma área monitorada foi encontrada no banco de dados.")
-        else:
-            df_areas = preparar_dataframe_areas(areas)
+        with tab_manutencao:
+            exibir_aba_manutencao_area()
 
-            total_areas = len(df_areas)
-            total_ativas = 0
-            total_regionais = 0
+    else:
+        tab_areas, tab_ovitrampas = st.tabs([
+            "Áreas Monitoradas",
+            "Ovitrampas por Área"
+        ])
 
-            if "Status" in df_areas.columns:
-                total_ativas = df_areas[df_areas["Status"].str.upper() == "ATIVA"].shape[0]
+        with tab_areas:
+            exibir_aba_areas_monitoradas()
 
-            if "Regional/Distrito" in df_areas.columns:
-                total_regionais = df_areas["Regional/Distrito"].nunique()
-
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Áreas cadastradas", total_areas)
-            c2.metric("Áreas ativas", total_ativas)
-            c3.metric("Regionais/Distritos", total_regionais)
-
-            st.markdown("#### Base territorial cadastrada")
-            st.dataframe(df_areas, use_container_width=True)
-
-    with tab_ovitrampas:
-        st.markdown("### 🧪 Monitoramento de Ovitrampas por Área")
-        st.caption(
-            "Consulta dos indicadores entomológicos vinculados às áreas monitoradas. "
-            "Os dados são carregados do endpoint `/api/ovitrampas/area/{codigoArea}`."
-        )
-
-        areas = buscar_dados_backend(
-            "/api/areas",
-            "Não foi possível carregar a lista de áreas para consulta de ovitrampas."
-        )
-
-        if areas is None or len(areas) == 0:
-            st.warning("Não foi possível carregar as áreas para seleção.")
-        else:
-            opcoes_area = montar_opcoes_areas(areas)
-
-            area_selecionada = st.selectbox(
-                "Selecione uma área monitorada",
-                opcoes_area,
-                key="select_ovitrampas_area"
-            )
-
-            codigo_area = extrair_codigo_area(area_selecionada)
-
-            st.markdown(f"**Área selecionada:** `{area_selecionada}`")
-
-            ovitrampas = buscar_dados_backend(
-                f"/api/ovitrampas/area/{codigo_area}",
-                "Não foi possível carregar os dados de ovitrampas para a área selecionada."
-            )
-
-            if ovitrampas is None:
-                st.info("Aguardando retorno do backend para os dados de ovitrampas.")
-            elif len(ovitrampas) == 0:
-                st.warning("Nenhum registro de ovitrampas foi encontrado para esta área.")
-            else:
-                df_ovitrampas = preparar_dataframe_ovitrampas(ovitrampas)
-
-                primeiro_registro = ovitrampas[0]
-
-                total_armadilhas = primeiro_registro.get("totalArmadilhas", 0)
-                total_positivas = primeiro_registro.get("totalPositivas", 0)
-                total_negativas = primeiro_registro.get("totalNegativas", 0)
-                percentual_positivas = primeiro_registro.get("percentualPositivas", 0)
-
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric("Total de armadilhas", total_armadilhas)
-                c2.metric("Positivas", total_positivas)
-                c3.metric("Negativas", total_negativas)
-                c4.metric("% Positivas", formatar_percentual(percentual_positivas))
-
-                st.markdown("#### Indicadores entomológicos da área")
-                st.dataframe(df_ovitrampas, use_container_width=True)
-
-    with tab_cadastro:
-        st.markdown("### 📝 Cadastro de Nova Área Monitorada")
-        st.info(
-            "O código da área será gerado automaticamente pelo backend, seguindo a sequência já existente. "
-            "Novas áreas são cadastradas inicialmente com status **ATIVA**."
-        )
-
-        with st.form("form_area_real"):
-            c1, c2 = st.columns(2)
-
-            nome_area = c1.text_input("Identificação da Área")
-            unidade_ref = c1.text_input("Unidade Básica de Saúde (UBS) Referência")
-            bairro = c2.text_input("Bairro ou área contemplada")
-            regional = c2.selectbox("Regional ou distrito", REGIONAIS)
-            pop_area = st.number_input("População de referência estimada", min_value=1, step=100)
-
-            submit_area = st.form_submit_button("Cadastrar Área no Banco")
-            
-            if submit_area:
-                if nome_area and unidade_ref and bairro and regional and pop_area:
-                    payload = {
-                        "nome": nome_area,
-                        "unidadeSaude": unidade_ref,
-                        "bairro": bairro,
-                        "regionalOuDistrito": regional,
-                        "populacaoReferencia": pop_area
-                    }
-
-                    response = enviar_dados_backend(
-                        "/api/areas",
-                        payload,
-                        "Não foi possível cadastrar a área."
-                    )
-
-                    if response is not None:
-                        st.success(
-                            f"Área cadastrada com sucesso. Código gerado: {response.get('codigoArea')} | "
-                            f"Status: {response.get('status')}"
-                        )
-                        st.info("Acesse a aba **Áreas Monitoradas** e clique em **Atualizar dados das áreas** para visualizar o novo registro.")
-                else:
-                    st.warning("Preencha todos os campos obrigatórios antes de cadastrar a área.")
-
-    with tab_manutencao:
-        st.markdown("### ⚙️ Manutenção de Área Monitorada")
-        st.caption(
-            "Use esta seção para inativar ou reativar áreas. A área não é excluída do banco; "
-            "apenas deixa de participar do monitoramento ativo quando marcada como INATIVA."
-        )
-
-        areas = buscar_dados_backend(
-            "/api/areas",
-            "Não foi possível carregar a lista de áreas para manutenção."
-        )
-
-        if areas is None or len(areas) == 0:
-            st.warning("Não foi possível carregar as áreas para manutenção.")
-        else:
-            opcoes_area = montar_opcoes_areas(areas)
-
-            area_selecionada = st.selectbox(
-                "Selecione uma área para manutenção",
-                opcoes_area,
-                key="select_manutencao_area"
-            )
-
-            id_area = extrair_id_area(area_selecionada)
-            status_area = extrair_status_area(area_selecionada)
-
-            st.markdown(f"**Área selecionada:** `{area_selecionada}`")
-            st.markdown(f"**Status atual:** `{status_area}`")
-
-            c1, c2 = st.columns(2)
-
-            with c1:
-                if st.button("Inativar área selecionada"):
-                    response = alterar_status_area(id_area, "inativar")
-
-                    if response is not None:
-                        st.success(f"Área {response.get('codigoArea')} inativada com sucesso.")
-                        st.info("Atualize a página ou retorne à aba para visualizar o novo status.")
-
-            with c2:
-                if st.button("Reativar área selecionada"):
-                    response = alterar_status_area(id_area, "reativar")
-
-                    if response is not None:
-                        st.success(f"Área {response.get('codigoArea')} reativada com sucesso.")
-                        st.info("Atualize a página ou retorne à aba para visualizar o novo status.")
+        with tab_ovitrampas:
+            exibir_aba_ovitrampas()
 
 
 def modulo_importacao():
@@ -728,13 +803,13 @@ def modulo_importacao():
 def modulo_admin():
     st.markdown('<p class="title-dashboard">👥 Administração de Acessos</p>', unsafe_allow_html=True)
     
-    st.markdown("**Corpo Técnico Habilitado (Simulação)**")
+    st.markdown("**Corpo Técnico Habilitado**")
     membros = [
-        {"Matrícula": "4231923259", "Colaborador": "Daniela Teixeira Abreu", "Perfil": "Gestor de TI", "Status": "Ativo"},
-        {"Matrícula": "422222661", "Colaborador": "Marcela Maria Barbosa", "Perfil": "Analista de Dados", "Status": "Ativo"},
-        {"Matrícula": "4231925981", "Colaborador": "Matheus Felipe Lopes", "Perfil": "Analista de Dados", "Status": "Ativo"},
-        {"Matrícula": "4231925815", "Colaborador": "Nátali Isaltino Gomes", "Perfil": "Operador de Importação", "Status": "Ativo"},
-        {"Matrícula": "42321398", "Colaborador": "Vinícius Raphael Rios", "Perfil": "Operador de Importação", "Status": "Ativo"}
+        {"Colaborador": "Daniela Teixeira Abreu", "Usuário": "daniela", "Perfil": "Gestor de TI", "Status": "ATIVO"},
+        {"Colaborador": "Vinícius Raphael Rios", "Usuário": "vinicius", "Perfil": "Gestor Epidemiológico", "Status": "ATIVO"},
+        {"Colaborador": "Matheus Felipe Lopes", "Usuário": "matheus", "Perfil": "Analista de Dados", "Status": "ATIVO"},
+        {"Colaborador": "Nátali Isaltino Gomes", "Usuário": "natali", "Perfil": "Operador de Importação", "Status": "ATIVO"},
+        {"Colaborador": "Marcela Maria Barbosa", "Usuário": "marcela", "Perfil": "Analista de Vigilância", "Status": "ATIVO"}
     ]
     st.table(pd.DataFrame(membros))
 
@@ -744,30 +819,42 @@ if not st.session_state['logged_in']:
     modulo_login()
 else:
     role = st.session_state['user_role']
+    nome_usuario = st.session_state.get('user_name', '')
     
     with st.sidebar:
-        st.markdown(f"**Credencial Ativa:**")
-        st.info(f"👤 {role}")
+        st.markdown("**Credencial Ativa:**")
+
+        if nome_usuario:
+            st.info(f"👤 {nome_usuario}\n\nPerfil: {role}")
+        else:
+            st.info(f"👤 {role}")
+
         st.markdown("---")
         
         opcoes_menu = ["Dashboard Preditivo"]
         
+        if role in PERFIS_COM_GESTAO_CONSULTA:
+            opcoes_menu.append("Gestão Territorial")
+
         if role == "Gestor de TI":
-            opcoes_menu.extend(["Gestão Territorial", "Administração de Acessos", "Importação de Insumos"])
-        elif role == "Analista de Dados":
-            opcoes_menu.extend(["Importação de Insumos"])
+            opcoes_menu.append("Administração de Acessos")
+
+        if role in PERFIS_COM_IMPORTACAO:
+            opcoes_menu.append("Importação de Insumos")
             
         navegacao = st.radio("Módulos do Sistema", opcoes_menu)
         
         st.markdown("---")
         if st.button("Encerrar Sessão", type="secondary"):
             st.session_state['logged_in'] = False
+            st.session_state['user_role'] = ""
+            st.session_state['user_name'] = ""
             st.rerun()
 
     if navegacao == "Dashboard Preditivo":
         modulo_dashboard()
     elif navegacao == "Gestão Territorial":
-        modulo_cadastro()
+        modulo_cadastro(role)
     elif navegacao == "Administração de Acessos":
         modulo_admin()
     elif navegacao == "Importação de Insumos":
