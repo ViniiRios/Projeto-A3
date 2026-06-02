@@ -633,17 +633,23 @@ def modulo_dashboard():
     st.markdown('<p class="title-dashboard">📊 Módulo Preditivo de Risco</p>', unsafe_allow_html=True)
     st.markdown("Simulação de cenários epidemiológicos utilizando modelos de regressão validados no backend.")
 
-    with st.sidebar:
-        st.markdown("### ☁️ Parâmetros Locais")
-        temp_input = st.number_input("Temperatura Média (°C)", min_value=10.0, max_value=45.0, value=25.0, step=0.1)
-        precip_input = st.number_input("Pluviosidade (mm)", min_value=0.0, max_value=500.0, value=150.0, step=1.0)
-        
-        st.markdown("### 📈 Notificações")
-        casos_lag1 = st.number_input("Casos (Mês Atual)", 0, 100000, 500)
-        casos_lag2 = st.number_input("Casos (Mês Anterior)", 0, 100000, 300)
-        populacao = st.number_input("População da Área", 1, 5000000, 2500000)
-        
-        btn_predicao = st.button("🚀 Executar Motor de Inferência")
+    st.markdown("### ⚙️ Parâmetros da Análise")
+
+    with st.container(border=True):
+        st.caption("Informe os dados epidemiológicos e climáticos para executar a simulação de risco.")
+
+        c1, c2, c3 = st.columns(3)
+        temp_input = c1.number_input("Temperatura Média (°C)", min_value=10.0, max_value=45.0, value=25.0, step=0.1)
+        precip_input = c2.number_input("Pluviosidade (mm)", min_value=0.0, max_value=500.0, value=150.0, step=1.0)
+        populacao = c3.number_input("População da Área", 1, 5000000, 2500000)
+
+        c4, c5, c6 = st.columns(3)
+        casos_lag1 = c4.number_input("Casos (Mês Atual)", 0, 100000, 500)
+        casos_lag2 = c5.number_input("Casos (Mês Anterior)", 0, 100000, 300)
+
+        with c6:
+            st.markdown("<br>", unsafe_allow_html=True)
+            btn_predicao = st.button("🚀 Executar Motor de Inferência")
 
     tab_res, tab_dados_regionais, tab_met = st.tabs([
         "Resultados da Análise",
@@ -704,7 +710,7 @@ def modulo_dashboard():
                 except Exception as e:
                     st.error(f"⚠️ Motor Backend Indisponível. Certifique-se de que o Java (porta 8080) está rodando. Detalhes: {e}")
         else:
-            st.info("Aguardando execução. Ajuste os parâmetros na barra lateral e clique em 'Executar Motor de Inferência'.")
+            st.info("Aguardando execução. Ajuste os parâmetros acima e clique em 'Executar Motor de Inferência'.")
 
     with tab_dados_regionais:
         st.markdown("### 🌎 Dados Epidemiológicos e Climáticos Regionais")
@@ -1124,18 +1130,66 @@ def modulo_importacao():
         )
 
 
-def modulo_admin():
-    st.markdown('<p class="title-dashboard">👥 Administração de Acessos</p>', unsafe_allow_html=True)
-    
-    st.markdown("**Corpo Técnico Habilitado**")
-    membros = [
-        {"Colaborador": "Daniela Teixeira Abreu", "Usuário": "daniela", "Perfil": "Gestor de TI", "Status": "ATIVO"},
-        {"Colaborador": "Vinícius Raphael Rios", "Usuário": "vinicius", "Perfil": "Gestor Epidemiológico", "Status": "ATIVO"},
-        {"Colaborador": "Matheus Felipe Lopes", "Usuário": "matheus", "Perfil": "Analista de Dados", "Status": "ATIVO"},
-        {"Colaborador": "Nátali Isaltino Gomes", "Usuário": "natali", "Perfil": "Operador de Importação", "Status": "ATIVO"},
-        {"Colaborador": "Marcela Maria Barbosa", "Usuário": "marcela", "Perfil": "Analista de Vigilância", "Status": "ATIVO"}
+def modulo_sobre_projeto():
+    st.markdown('<p class="title-dashboard">ℹ️ Sobre o Projeto</p>', unsafe_allow_html=True)
+
+    st.markdown("### VigiA-SUS — Sistema de Monitoramento Epidemiológico")
+    st.write(
+        "O VigiA-SUS é uma plataforma acadêmica desenvolvida para apoiar o monitoramento epidemiológico, "
+        "organizando dados territoriais, epidemiológicos, climáticos e entomológicos em uma interface única."
+    )
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Versão", "MVP v1.0")
+    c2.metric("Área", "Saúde Pública")
+    c3.metric("Status", "Funcional")
+
+    st.markdown("---")
+
+    st.markdown("### Objetivo da solução")
+    st.write(
+        "A proposta do sistema é facilitar a visualização e a análise de dados relevantes para vigilância em saúde, "
+        "permitindo consultar áreas monitoradas, acompanhar indicadores de ovitrampas, visualizar dados regionais "
+        "e simular cenários de risco epidemiológico."
+    )
+
+    st.markdown("### Principais módulos")
+    modulos = [
+        {
+            "Módulo": "Dashboard Preditivo",
+            "Finalidade": "Simular cenários de risco e consultar dados regionais epidemiológicos e climáticos."
+        },
+        {
+            "Módulo": "Gestão Territorial",
+            "Finalidade": "Consultar áreas monitoradas, indicadores de ovitrampas, cadastrar áreas e realizar manutenção de status."
+        },
+        {
+            "Módulo": "Importação de Insumos",
+            "Finalidade": "Validar arquivos CSV antes da carga oficial dos dados no banco PostgreSQL."
+        },
+        {
+            "Módulo": "Login e Perfis",
+            "Finalidade": "Controlar o acesso aos módulos conforme perfil do usuário autenticado."
+        }
     ]
-    st.table(pd.DataFrame(membros))
+
+    st.dataframe(pd.DataFrame(modulos), use_container_width=True, hide_index=True)
+
+    st.markdown("### Equipe e perfis no sistema")
+    membros = [
+        {"Integrante": "Daniela Teixeira Abreu", "Usuário": "daniela", "Perfil": "Gestor de TI"},
+        {"Integrante": "Vinícius Raphael Rios", "Usuário": "vinicius", "Perfil": "Gestor Epidemiológico"},
+        {"Integrante": "Matheus Felipe Lopes", "Usuário": "matheus", "Perfil": "Analista de Dados"},
+        {"Integrante": "Nátali Isaltino Gomes", "Usuário": "natali", "Perfil": "Operador de Importação"},
+        {"Integrante": "Marcela Maria Barbosa", "Usuário": "marcela", "Perfil": "Analista de Vigilância"}
+    ]
+
+    st.dataframe(pd.DataFrame(membros), use_container_width=True, hide_index=True)
+
+    st.info(
+        "Projeto acadêmico desenvolvido como MVP funcional. O sistema demonstra uma proposta integrada "
+        "de apoio ao monitoramento epidemiológico e à organização de dados em saúde pública."
+    )
 
 
 # --- 5. ROTEADOR PRINCIPAL E CONTROLE DE ACESSO ---
@@ -1147,7 +1201,7 @@ else:
     nome_usuario = st.session_state.get('user_name', '')
     
     with st.sidebar:
-        st.markdown("**Credencial Ativa:**")
+        st.markdown("### Sessão")
 
         if nome_usuario:
             st.info(f"👤 {nome_usuario}\n\nPerfil: {role}")
@@ -1155,21 +1209,22 @@ else:
             st.info(f"👤 {role}")
 
         st.markdown("---")
+        st.markdown("### Navegação")
         
         opcoes_menu = ["Dashboard Preditivo"]
         
         if role in PERFIS_COM_GESTAO_CONSULTA:
             opcoes_menu.append("Gestão Territorial")
 
-        if role == "Gestor de TI":
-            opcoes_menu.append("Administração de Acessos")
-
         if role in PERFIS_COM_IMPORTACAO:
             opcoes_menu.append("Importação de Insumos")
+
+        opcoes_menu.append("Sobre o Projeto")
             
         navegacao = st.radio("Módulos do Sistema", opcoes_menu)
         
         st.markdown("---")
+        st.markdown("### Conta")
         if st.button("Encerrar Sessão", type="secondary"):
             st.session_state['logged_in'] = False
             st.session_state['user_role'] = ""
@@ -1180,10 +1235,10 @@ else:
         modulo_dashboard()
     elif navegacao == "Gestão Territorial":
         modulo_cadastro(role)
-    elif navegacao == "Administração de Acessos":
-        modulo_admin()
     elif navegacao == "Importação de Insumos":
         modulo_importacao()
+    elif navegacao == "Sobre o Projeto":
+        modulo_sobre_projeto()
 
     st.markdown("---")
     st.markdown(
