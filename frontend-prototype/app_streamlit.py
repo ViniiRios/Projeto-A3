@@ -38,6 +38,79 @@ PERFIS_COM_IMPORTACAO = [
     "Operador de Importação"
 ]
 
+CONFIG_INSUMOS = {
+    "Áreas monitoradas": {
+        "arquivo_modelo": "modelo_areas.csv",
+        "descricao": "Base territorial de áreas monitoradas pelo sistema.",
+        "colunas": [
+            "codigo_area",
+            "nome",
+            "unidade_saude",
+            "bairro",
+            "regional_ou_distrito",
+            "populacao_referencia",
+            "status"
+        ],
+        "exemplo": {
+            "codigo_area": "000",
+            "nome": "BHZ NORT",
+            "unidade_saude": "CENTRO DE SAUDE AARAO REIS",
+            "bairro": "AARAO REIS",
+            "regional_ou_distrito": "NORTE",
+            "populacao_referencia": "213427",
+            "status": "ATIVA"
+        }
+    },
+    "Ovitrampas": {
+        "arquivo_modelo": "modelo_ovitrampas.csv",
+        "descricao": "Indicadores entomológicos consolidados por área monitorada.",
+        "colunas": [
+            "codigo_area",
+            "bairro",
+            "total_armadilhas",
+            "total_negativas",
+            "percentual_negativas",
+            "total_positivas",
+            "percentual_positivas"
+        ],
+        "exemplo": {
+            "codigo_area": "000",
+            "bairro": "AARAO REIS",
+            "total_armadilhas": "100",
+            "total_negativas": "62",
+            "percentual_negativas": "62",
+            "total_positivas": "38",
+            "percentual_positivas": "38"
+        }
+    },
+    "Casos e clima": {
+        "arquivo_modelo": "modelo_casos_clima.csv",
+        "descricao": "Base epidemiológica e climática consolidada por regional.",
+        "colunas": [
+            "periodo_referencia",
+            "regional",
+            "casos_dengue",
+            "casos_chikungunya",
+            "casos_zika",
+            "casos_total",
+            "temperatura_media",
+            "precipitacao_total",
+            "populacao_regional"
+        ],
+        "exemplo": {
+            "periodo_referencia": "2017-01 até 2017-12",
+            "regional": "Barreiro",
+            "casos_dengue": "659",
+            "casos_chikungunya": "26",
+            "casos_zika": "14",
+            "casos_total": "699",
+            "temperatura_media": "20,5 °C",
+            "precipitacao_total": "1215,4 mm",
+            "populacao_regional": "278.144"
+        }
+    }
+}
+
 st.set_page_config(
     page_title="VigiA-SUS | Sistema Preditivo",
     page_icon="🦠",
@@ -149,6 +222,8 @@ if 'user_role' not in st.session_state:
     st.session_state['user_role'] = ""
 if 'user_name' not in st.session_state:
     st.session_state['user_name'] = ""
+if 'historico_importacoes' not in st.session_state:
+    st.session_state['historico_importacoes'] = []
 
 # --- 3. FUNÇÕES AUXILIARES DE INTEGRAÇÃO ---
 
@@ -372,6 +447,152 @@ def extrair_status_area(opcao_area):
         return opcao_area.split("[")[-1].replace("]", "").strip()
     except Exception:
         return ""
+
+
+# --- 3.1 FUNÇÕES AUXILIARES DE IMPORTAÇÃO ---
+
+def normalizar_coluna(coluna):
+    return str(coluna).strip().lower()
+
+
+def ler_csv_flexivel(arquivo):
+    try:
+        arquivo.seek(0)
+        return pd.read_csv(arquivo, sep=None, engine="python", dtype=str)
+    except Exception:
+        arquivo.seek(0)
+        return pd.read_csv(arquivo, dtype=str)
+
+
+def gerar_modelo_csv(tipo_insumo):
+    configuracao = CONFIG_INSUMOS[tipo_insumo]
+    df_modelo = pd.DataFrame([configuracao["exemplo"]])
+    return df_modelo.to_csv(index=False).encode("utf-8")
+
+
+def validar_arquivo_insumo(df, tipo_insumo):
+    colunas_esperadas = CONFIG_INSUMOS[tipo_insumo]["colunas"]
+    colunas_encontradas = [normalizar_coluna(coluna) for coluna in df.columns]
+
+    colunas_faltantes = [
+        coluna for coluna in colunas_esperadas
+        if coluna not in colunas_encontradas
+    ]
+
+    colunas_extras = [
+        coluna for coluna in colunas_encontradas
+        if coluna not in colunas_esperadas
+    ]
+
+    total_linhas = len(df)
+    total_colunas = len(df.columns)
+
+    campos_vazios_por_coluna = {}
+    total_campos_vazios = 0
+
+    df_normalizado = df.copy()
+    df_normalizado.columns = colunas_encontradas
+
+    for coluna in colunas_esperadas:
+        if coluna in df_normalizado.columns:
+            vazios = df_normalizado[coluna].isna().sum()
+            vazios += (df_normalizado[coluna].astype(str).str.strip() == "").sum()
+            campos_vazios_por_coluna[coluna] = int(vazios)
+            total_campos_vazios += int(vazios)
+
+    aprovado = len(colunas_faltantes) == 0 and total_linhas > 0
+
+    if aprovado and total_campos_vazios == 0:
+        status = "APROVADO"
+        mensagem = "Arquivo aprovado na validação estrutural."
+    elif aprovado and total_campos_vazios > 0:
+        status = "APROVADO COM ALERTAS"
+        mensagem = "Arquivo possui as colunas esperadas, mas contém campos vazios."
+    else:
+        status = "REPROVADO"
+        mensagem = "Arquivo não possui todas as colunas obrigatórias ou está vazio."
+
+    return {
+        "tipo_insumo": tipo_insumo,
+        "status": status,
+        "mensagem": mensagem,
+        "total_linhas": total_linhas,
+        "total_colunas": total_colunas,
+        "colunas_esperadas": colunas_esperadas,
+        "colunas_encontradas": colunas_encontradas,
+        "colunas_faltantes": colunas_faltantes,
+        "colunas_extras": colunas_extras,
+        "campos_vazios_por_coluna": campos_vazios_por_coluna,
+        "total_campos_vazios": total_campos_vazios
+    }
+
+
+def registrar_historico_importacao(nome_arquivo, resultado_validacao, usuario):
+    registro = {
+        "Data/Hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        "Arquivo": nome_arquivo,
+        "Tipo de Insumo": resultado_validacao["tipo_insumo"],
+        "Usuário": usuario,
+        "Status": resultado_validacao["status"],
+        "Linhas": resultado_validacao["total_linhas"],
+        "Colunas": resultado_validacao["total_colunas"],
+        "Campos Vazios": resultado_validacao["total_campos_vazios"]
+    }
+
+    st.session_state["historico_importacoes"].append(registro)
+
+
+def exibir_resultado_validacao(resultado):
+    status = resultado["status"]
+
+    if status == "APROVADO":
+        st.success(resultado["mensagem"])
+    elif status == "APROVADO COM ALERTAS":
+        st.warning(resultado["mensagem"])
+    else:
+        st.error(resultado["mensagem"])
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Linhas analisadas", resultado["total_linhas"])
+    c2.metric("Colunas encontradas", resultado["total_colunas"])
+    c3.metric("Colunas faltantes", len(resultado["colunas_faltantes"]))
+    c4.metric("Campos vazios", resultado["total_campos_vazios"])
+
+    st.markdown("#### Resultado da conferência estrutural")
+
+    col_a, col_b = st.columns(2)
+
+    with col_a:
+        st.markdown("**Colunas esperadas**")
+        st.dataframe(
+            pd.DataFrame({"Coluna esperada": resultado["colunas_esperadas"]}),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    with col_b:
+        st.markdown("**Colunas encontradas no arquivo**")
+        st.dataframe(
+            pd.DataFrame({"Coluna encontrada": resultado["colunas_encontradas"]}),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    if resultado["colunas_faltantes"]:
+        st.markdown("#### Colunas faltantes")
+        st.error(", ".join(resultado["colunas_faltantes"]))
+
+    if resultado["colunas_extras"]:
+        st.markdown("#### Colunas extras")
+        st.info(", ".join(resultado["colunas_extras"]))
+
+    if resultado["total_campos_vazios"] > 0:
+        st.markdown("#### Campos vazios por coluna")
+        df_vazios = pd.DataFrame(
+            list(resultado["campos_vazios_por_coluna"].items()),
+            columns=["Coluna", "Campos vazios"]
+        )
+        st.dataframe(df_vazios, use_container_width=True, hide_index=True)
 
 # --- 4. MÓDULOS DO SISTEMA ---
 
@@ -772,32 +993,135 @@ def modulo_cadastro(role):
 
 def modulo_importacao():
     st.markdown('<p class="title-dashboard">📥 Integração e Validação de Insumos</p>', unsafe_allow_html=True)
-    st.markdown("Módulo destinado à carga de planilhas de ovitrampas e notificações epidemiológicas padronizadas.")
+    st.markdown(
+        "Módulo destinado à conferência de planilhas utilizadas no monitoramento epidemiológico, "
+        "com validação de estrutura antes da carga oficial no banco de dados."
+    )
 
-    c_upload, c_validacao = st.columns([2, 1])
-    
-    with c_upload:
-        arquivo = st.file_uploader("Anexar Lote de Dados (Formato .CSV)", type="csv")
+    tab_validar, tab_historico, tab_regras = st.tabs([
+        "Validar Arquivo",
+        "Histórico de Importações",
+        "Regras dos Insumos"
+    ])
+
+    with tab_validar:
+        st.markdown("### 📄 Validação de Arquivo CSV")
+        st.info(
+            "Nesta versão, a tela realiza a pré-validação dos arquivos antes da persistência oficial. "
+            "A carga final dos dados continua sendo controlada no banco PostgreSQL."
+        )
+
+        tipo_insumo = st.selectbox(
+            "Tipo de insumo",
+            list(CONFIG_INSUMOS.keys())
+        )
+
+        configuracao = CONFIG_INSUMOS[tipo_insumo]
+
+        st.caption(configuracao["descricao"])
+
+        modelo_csv = gerar_modelo_csv(tipo_insumo)
+
+        st.download_button(
+            label="⬇️ Baixar modelo CSV",
+            data=modelo_csv,
+            file_name=configuracao["arquivo_modelo"],
+            mime="text/csv"
+        )
+
+        arquivo = st.file_uploader(
+            "Anexar arquivo CSV para validação",
+            type="csv",
+            key="upload_insumo_csv"
+        )
+
         if arquivo:
             try:
-                df = pd.read_csv(arquivo)
-                st.write("Pré-visualização do Lote (Amostra 5 registros):")
-                st.dataframe(df.head(5), use_container_width=True)
-            except Exception:
-                st.error("Erro na leitura do arquivo. Certifique-se de que é um CSV válido delimitado por vírgulas.")
+                df = ler_csv_flexivel(arquivo)
+                resultado = validar_arquivo_insumo(df, tipo_insumo)
 
-    with c_validacao:
-        st.markdown("### Protocolo de Validação")
-        st.checkbox("Integridade de Cabeçalhos", value=bool(arquivo), disabled=True)
-        st.checkbox("Tipagem de Variáveis Contínuas", value=bool(arquivo), disabled=True)
-        st.checkbox("Consistência Georreferencial", value=bool(arquivo), disabled=True)
-        
-        st.write("")
-        if st.button("Iniciar Pipeline de Processamento"):
-            if arquivo:
-                st.success("Dados aprovados nas regras de negócio. Prontos para persistência.")
-            else:
-                st.error("Nenhum lote de dados anexado.")
+                exibir_resultado_validacao(resultado)
+
+                st.markdown("#### Pré-visualização do arquivo")
+                st.dataframe(df.head(10), use_container_width=True)
+
+                if st.button("Registrar validação no histórico"):
+                    registrar_historico_importacao(
+                        arquivo.name,
+                        resultado,
+                        st.session_state.get("user_name", "Usuário não identificado")
+                    )
+                    st.success("Validação registrada no histórico da sessão.")
+
+            except Exception as e:
+                st.error(f"Erro ao processar o arquivo CSV. Detalhes: {e}")
+        else:
+            st.warning("Nenhum arquivo anexado para validação.")
+
+    with tab_historico:
+        st.markdown("### 🧾 Histórico de Importações e Validações")
+        st.caption(
+            "Histórico temporário das validações realizadas durante a sessão atual. "
+            "Este registro auxilia a rastreabilidade operacional do processo de conferência."
+        )
+
+        historico = st.session_state.get("historico_importacoes", [])
+
+        if len(historico) == 0:
+            st.info("Nenhuma validação foi registrada nesta sessão.")
+        else:
+            df_historico = pd.DataFrame(historico)
+            st.dataframe(df_historico, use_container_width=True, hide_index=True)
+
+            total_validacoes = len(df_historico)
+            total_aprovadas = df_historico[df_historico["Status"] == "APROVADO"].shape[0]
+            total_alertas = df_historico[df_historico["Status"] == "APROVADO COM ALERTAS"].shape[0]
+            total_reprovadas = df_historico[df_historico["Status"] == "REPROVADO"].shape[0]
+
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Validações", total_validacoes)
+            c2.metric("Aprovadas", total_aprovadas)
+            c3.metric("Com alertas", total_alertas)
+            c4.metric("Reprovadas", total_reprovadas)
+
+            if st.button("Limpar histórico da sessão"):
+                st.session_state["historico_importacoes"] = []
+                st.rerun()
+
+    with tab_regras:
+        st.markdown("### 📌 Regras dos Insumos")
+        st.caption(
+            "As regras abaixo orientam a preparação dos arquivos utilizados no sistema. "
+            "O objetivo é reduzir inconsistências antes da carga dos dados."
+        )
+
+        for nome_insumo, config in CONFIG_INSUMOS.items():
+            with st.expander(nome_insumo, expanded=False):
+                st.write(config["descricao"])
+
+                st.markdown("**Colunas obrigatórias:**")
+                st.dataframe(
+                    pd.DataFrame({"Coluna": config["colunas"]}),
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+                st.markdown("**Exemplo de preenchimento:**")
+                st.dataframe(
+                    pd.DataFrame([config["exemplo"]]),
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+        st.markdown("### Recomendações gerais")
+        st.write(
+            "- Utilizar arquivos no formato CSV.\n"
+            "- Manter os cabeçalhos exatamente como no modelo.\n"
+            "- Preservar códigos de área com zeros à esquerda, como `000`, `001` e `002`.\n"
+            "- Conferir se não há campos obrigatórios vazios.\n"
+            "- Validar o arquivo antes da carga oficial no banco.\n"
+            "- Evitar alterar manualmente nomes de colunas já padronizadas."
+        )
 
 
 def modulo_admin():
@@ -812,6 +1136,7 @@ def modulo_admin():
         {"Colaborador": "Marcela Maria Barbosa", "Usuário": "marcela", "Perfil": "Analista de Vigilância", "Status": "ATIVO"}
     ]
     st.table(pd.DataFrame(membros))
+
 
 # --- 5. ROTEADOR PRINCIPAL E CONTROLE DE ACESSO ---
 
