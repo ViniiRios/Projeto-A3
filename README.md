@@ -1,119 +1,235 @@
-# Sistema de Monitoramento Epidemiológico
+# Sistema de Monitoramento Epidemiológico — VigiA-SUS
 
-## 📌 Visão Geral
+## 📌 Resumo do Projeto
 
-O sistema consiste em uma aplicação web desenvolvida em Java com o objetivo de apoiar o monitoramento epidemiológico e a gestão de risco em saúde pública. A solução permite centralizar e organizar dados relacionados a áreas monitoradas, como registros epidemiológicos, dados climáticos, informações territoriais e indicadores utilizados na análise de risco.
+O **VigiA-SUS** é um sistema acadêmico de monitoramento epidemiológico desenvolvido para apoiar a análise de risco em saúde pública. A aplicação organiza dados territoriais, epidemiológicos, climáticos e entomológicos, permitindo consultar áreas monitoradas, acompanhar indicadores de ovitrampas, validar insumos e executar uma análise preditiva de risco. O sistema possui backend em Java/Spring Boot, banco PostgreSQL, serviço complementar em Python para apoio ao cálculo preditivo e interface visual em Streamlit. O objetivo é oferecer uma ferramenta de apoio à tomada de decisão para equipes de vigilância e gestão em saúde.
 
-A principal proposta do sistema é facilitar a visualização e o acompanhamento de regiões com maior risco epidemiológico, permitindo que usuários consultem dados, identifiquem padrões e tenham uma visão mais clara da situação de cada área monitorada.
+## 🎯 Problema que resolve e público-alvo
 
-O sistema é voltado para profissionais e gestores da área da saúde, oferecendo uma ferramenta digital para apoio à tomada de decisão, organização de informações e análise de dados de forma mais estruturada.
+O monitoramento epidemiológico envolve dados de diferentes origens, como notificações de doenças, clima, território, população e indicadores de vetores. Quando essas informações ficam dispersas, a análise de risco se torna mais lenta e menos padronizada.
 
-Como diferencial, o sistema integra uma lógica de cálculo de risco com apoio de um serviço complementar em Python, permitindo classificar automaticamente as áreas em níveis de risco e apresentar os resultados em uma interface visual de apoio.
+O VigiA-SUS busca centralizar essas informações em uma plataforma única, facilitando a consulta, a análise e a classificação de risco epidemiológico.
 
----
+**Público-alvo:**
 
-## 🏗️ Arquitetura Mínima
+* gestores epidemiológicos;
+* analistas de vigilância;
+* analistas de dados;
+* operadores de importação de insumos;
+* profissionais e equipes de saúde pública.
 
-A aplicação segue uma arquitetura simples baseada em separação de responsabilidades, utilizando o padrão de desenvolvimento em camadas.
+## ✨ Funcionalidades
 
-### 🔹 Backend
+* Autenticação de usuários com login e senha.
+* Controle de acesso por perfil de usuário.
+* Dashboard Preditivo para análise de risco epidemiológico.
+* Cálculo da taxa atual de incidência.
+* Integração com serviço Python para estimativa preditiva de risco.
+* Exibição do índice preditivo considerado, taxa atual, taxa prevista e casos estimados.
+* Consulta de dados regionais de casos e clima.
+* Listagem de áreas monitoradas.
+* Cadastro de novas áreas monitoradas.
+* Geração automática do código da área.
+* Inativação e reativação de áreas sem exclusão do banco.
+* Consulta de indicadores de ovitrampas por área.
+* Pré-validação de arquivos CSV de insumos.
+* Download de modelos CSV.
+* Histórico temporário de validações de insumos.
+* Tela informativa sobre o projeto e a equipe.
 
-O backend é desenvolvido em Java utilizando o framework Spring Boot. Ele é responsável por:
+## 🛠️ Tecnologias utilizadas
 
-- Gerenciar as regras de negócio do sistema  
-- Organizar e estruturar os dados  
-- Expor endpoints REST para acesso às informações  
-- Integrar o sistema principal com o serviço complementar de cálculo de risco  
+### Backend
 
-A aplicação possui controladores responsáveis por receber requisições HTTP e retornar respostas no formato JSON.
+* Java
+* Spring Boot
+* Maven
+* Spring Data JPA
+* PostgreSQL
+* API REST
 
----
+### Frontend
 
-### 🔹 Estrutura de Dados
+* Python
+* Streamlit
+* Pandas
+* Requests
 
-Os dados do sistema são representados por classes Java, DTOs e serviços responsáveis por organizar os fluxos de cadastro, consulta e cálculo de risco.
+### Serviço preditivo
 
-Atualmente, o sistema trabalha com dados como:
+* Python
+* Flask
+* Pandas
+* NumPy
+* Scikit-learn
+* XGBoost
 
-- Identificador da área  
-- Nome da área monitorada  
-- Unidade de saúde associada  
-- Bairro  
-- Regional ou distrito  
-- População de referência  
-- Status da área  
-- Indicadores utilizados na análise de risco  
+### Testes
 
-Nesta etapa, o cadastro e a consulta de áreas monitoradas funcionam em memória, sem persistência em banco de dados.
+* JUnit 5
+* Mockito
+* Cucumber
+* Gherkin
+* Maven
 
----
+### Ferramentas de apoio
 
-### 🔹 API REST
+* Visual Studio Code
+* Postman
+* DBeaver
+* GitHub
+* GitHub Issues/Projects
 
-A comunicação com o sistema é feita por meio de endpoints REST. Entre os endpoints implementados estão:
+## ▶️ Como executar o projeto
 
-- `POST /api/areas` → cadastra uma nova área monitorada  
-- `GET /api/areas` → lista as áreas monitoradas cadastradas  
-- `GET /api/areas/{id}` → consulta uma área monitorada pelo identificador  
-- `POST /api/areas/calcular-risco` → realiza o cálculo de risco com apoio da integração com Python  
+A aplicação completa roda localmente com três partes abertas separadamente:
 
-As respostas são fornecidas em formato JSON, permitindo integração com a interface visual e com futuras evoluções do sistema.
+1. backend Java/Spring Boot;
+2. serviço Python de IA;
+3. frontend Streamlit.
 
----
+### 1. Executar o backend Java
 
-### 🔹 Front-end
+No terminal, acesse a pasta:
 
-A solução já conta com um protótipo visual desenvolvido em Streamlit, utilizado para exibir informações do sistema e apresentar os resultados do cálculo de risco de forma mais visual e interativa.
+```bash
+cd systemvigiasus
+```
 
-Essa camada tem como objetivo permitir:
+Execute:
 
-- Visualização organizada dos dados  
-- Apresentação dos resultados do cálculo de risco  
-- Apoio à demonstração e validação do fluxo da solução  
+```bash
+.\mvnw.cmd spring-boot:run
+```
 
----
+O backend será iniciado em:
 
-### 🔹 Serviço complementar em Python
+```text
+http://localhost:8080
+```
 
-O projeto também conta com um serviço complementar em Python, responsável por executar a lógica específica de cálculo de risco utilizada pela aplicação.
+### 2. Executar o serviço Python
 
-Esse serviço atua de forma integrada ao backend Java, recebendo os dados necessários, processando o cálculo e devolvendo a resposta ao sistema principal.
+Em outro terminal, acesse a pasta:
 
----
+```bash
+cd ai-engine
+```
 
-### 🔹 Banco de Dados (Planejado)
+Execute:
 
-Está prevista a integração com um banco de dados relacional, que permitirá:
+```bash
+py main.py
+```
 
-- Persistência dos dados  
-- Armazenamento estruturado das informações  
-- Suporte a consultas mais avançadas  
-- Evolução do sistema para além do uso em memória  
+O serviço Python será iniciado em:
 
----
+```text
+http://localhost:5000
+```
 
-## 🚀 Status do Projeto
+### 3. Executar o frontend Streamlit
 
-Atualmente, o sistema se encontra em desenvolvimento e já apresenta entregas além da Sprint 0, incluindo funcionalidades iniciais da Sprint 1.
+Em outro terminal, acesse a pasta:
 
-No estágio atual, o projeto já possui:
+```bash
+cd frontend-prototype
+```
 
-- Estrutura base do backend configurada  
-- Endpoints REST funcionando  
-- Cadastro de áreas monitoradas em memória  
-- Listagem e consulta de áreas monitoradas por identificador  
-- Integração entre Java e serviço complementar em Python  
-- Protótipo visual em Streamlit  
-- Testes unitários iniciais implementados para a camada de serviço  
+Execute:
 
-Essa etapa tem como objetivo validar o fluxo funcional da aplicação, estruturar o sistema para os próximos incrementos e preparar a evolução para persistência, refinamento visual e ampliação das funcionalidades.
+```bash
+py -m streamlit run app_streamlit.py
+```
 
----
+O sistema será aberto no navegador em:
 
-## 👨‍💻 Integrantes
+```text
+http://localhost:8501
+```
 
-* Daniela Teixeira Abreu – 4231923259
-* Marcela Maria Barbosa - 422222661
-* Matheus Felipe Lopes da Silva - 4231925981
-* Nátali Isaltino Gomes - 4231925815
-* Vinícius Raphael Rios de Lima - 42321398
+## 👤 Usuários de teste
+
+| Usuário    | Senha  | Nome                   | Perfil                 |
+| ---------- | ------ | ---------------------- | ---------------------- |
+| `daniela`  | `1234` | Daniela Teixeira Abreu | Gestor de TI           |
+| `vinicius` | `1234` | Vinícius Raphael Rios  | Gestor Epidemiológico  |
+| `matheus`  | `1234` | Matheus Felipe Lopes   | Analista de Dados      |
+| `natali`   | `1234` | Nátali Isaltino Gomes  | Operador de Importação |
+| `marcela`  | `1234` | Marcela Maria Barbosa  | Analista de Vigilância |
+
+## 🧱 Estrutura de pastas
+
+```text
+Projeto-A3/
+├── ai-engine/
+│   ├── dados/
+│   ├── model/
+│   ├── scripts/
+│   ├── main.py
+│   └── requirements.txt
+│
+├── frontend-prototype/
+│   └── app_streamlit.py
+│
+├── systemvigiasus/
+│   ├── src/
+│   │   ├── main/
+│   │   └── test/
+│   └── pom.xml
+│
+├── docs/
+│   ├── requisitos/
+│   └── testes/
+│
+├── slides/
+└── README.md
+```
+
+## 🧪 Como rodar os testes
+
+Na pasta do backend:
+
+```bash
+cd systemvigiasus
+```
+
+Execute:
+
+```bash
+.\mvnw.cmd clean test
+```
+
+Esse comando executa:
+
+* testes unitários com JUnit e Mockito;
+* cenários BDD automatizados com Cucumber;
+* validação do build do backend.
+
+Resultado esperado:
+
+```text
+BUILD SUCCESS
+```
+
+Os cenários BDD ficam em:
+
+```text
+systemvigiasus/src/test/resources/features/
+```
+
+O relatório HTML do Cucumber é gerado em:
+
+```text
+systemvigiasus/target/cucumber-report.html
+```
+
+## 👥 Integrantes e papéis na Sprint
+
+| Integrante                    | Matrícula  | Papel/Atuação                                                                                                   |
+| ----------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
+| Daniela Teixeira Abreu        | 4231923259 | Implementação inicial da IA, organização da documentação, estrutura de pastas e ajustes visuais/frontend        |
+| Marcela Maria Barbosa         | 422222661  | Apoio na validação funcional e testes do sistema                                                                |
+| Matheus Felipe Lopes da Silva | 4231925981 | Tratamento de planilhas, organização de dados e apoio à base epidemiológica/climática                           |
+| Nátali Isaltino Gomes         | 4231925815 | Apoio no frontend, validação de telas e importação de insumos                                                   |
+| Vinícius Raphael Rios de Lima | 42321398   | Backend, banco de dados, integração Java/Python, refinamento da IA, testes automatizados e documentação técnica |

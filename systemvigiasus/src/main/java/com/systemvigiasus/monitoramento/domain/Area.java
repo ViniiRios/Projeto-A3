@@ -1,21 +1,48 @@
 package com.systemvigiasus.monitoramento.domain;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "areas")
 public class Area {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "codigo_area", unique = true)
+    private String codigoArea;
+
+    @Column(nullable = false)
     private String nome;
+
+    @Column(nullable = false)
     private String unidadeSaude;
+
+    @Column(nullable = false)
     private String bairro;
+
+    @Column(nullable = false)
     private String regionalOuDistrito;
+
+    @Column(nullable = false)
     private Integer populacaoReferencia;
+
+    @Column(nullable = false)
     private String status;
 
     public Area() {
     }
 
-    public Area(Long id, String nome, String unidadeSaude, String bairro,
+    public Area(Long id, String codigoArea, String nome, String unidadeSaude, String bairro,
                 String regionalOuDistrito, Integer populacaoReferencia, String status) {
         this.id = id;
+        this.codigoArea = codigoArea;
         this.nome = nome;
         this.unidadeSaude = unidadeSaude;
         this.bairro = bairro;
@@ -30,6 +57,14 @@ public class Area {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getCodigoArea() {
+        return codigoArea;
+    }
+
+    public void setCodigoArea(String codigoArea) {
+        this.codigoArea = codigoArea;
     }
 
     public String getNome() {
