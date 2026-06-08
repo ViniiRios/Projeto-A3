@@ -1,0 +1,4 @@
+modelo;rmse
+XGBoost;260.4113
+MLPRegressor;602.2541
+Regressao Linear;991.253

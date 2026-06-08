@@ -636,16 +636,51 @@ def modulo_dashboard():
     st.markdown("### ⚙️ Parâmetros da Análise")
 
     with st.container(border=True):
-        st.caption("Informe os dados epidemiológicos e climáticos para executar a simulação de risco.")
+        st.caption(
+            "Informe os dados epidemiológicos e climáticos para executar a simulação de risco. "
+            "A temperatura média é limitada a uma faixa compatível com a base histórica usada no modelo."
+        )
 
         c1, c2, c3 = st.columns(3)
-        temp_input = c1.number_input("Temperatura Média (°C)", min_value=10.0, max_value=45.0, value=25.0, step=0.1)
-        precip_input = c2.number_input("Pluviosidade (mm)", min_value=0.0, max_value=500.0, value=150.0, step=1.0)
-        populacao = c3.number_input("População da Área", 1, 5000000, 2500000)
+
+        temp_input = c1.number_input(
+            "Temperatura Média (°C)",
+            min_value=15.0,
+            max_value=30.0,
+            value=25.0,
+            step=0.1
+        )
+
+        precip_input = c2.number_input(
+            "Pluviosidade (mm)",
+            min_value=0.0,
+            max_value=500.0,
+            value=150.0,
+            step=1.0
+        )
+
+        populacao = c3.number_input(
+            "População da Área",
+            min_value=1,
+            max_value=5000000,
+            value=2500000
+        )
 
         c4, c5, c6 = st.columns(3)
-        casos_lag1 = c4.number_input("Casos (Mês Atual)", 0, 100000, 500)
-        casos_lag2 = c5.number_input("Casos (Mês Anterior)", 0, 100000, 300)
+
+        casos_lag1 = c4.number_input(
+            "Casos (Mês Atual)",
+            min_value=0,
+            max_value=100000,
+            value=500
+        )
+
+        casos_lag2 = c5.number_input(
+            "Casos (Mês Anterior)",
+            min_value=0,
+            max_value=100000,
+            value=300
+        )
 
         with c6:
             st.markdown("<br>", unsafe_allow_html=True)
@@ -656,18 +691,21 @@ def modulo_dashboard():
         "Dados Regionais",
         "Metodologia Empregada"
     ])
-    
+
     with tab_res:
         st.subheader("Resumo das Variáveis Inseridas")
+
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Temperatura", f"{temp_input}°C")
         c2.metric("Chuva Acumulada", f"{precip_input} mm")
         c3.metric("Total de Notificações", casos_lag1)
         c4.metric("População", f"{populacao:,}".replace(",", "."))
+
         st.markdown("---")
 
         if btn_predicao:
             url_java = f"{API_BASE_URL}/api/areas/calcular-risco"
+
             payload = {
                 "temperatura": temp_input,
                 "chuva": precip_input,
@@ -684,31 +722,63 @@ def modulo_dashboard():
 
                     if response.status_code == 200:
                         res = response.json()
-                        nivel_risco = res.get('risco', 'INDETERMINADO').upper()
-                        taxa = res.get('taxaIncidencia', 0.0)
+
+                        nivel_risco = str(res.get("risco", "INDETERMINADO")).upper()
+
+                        taxa_atual = float(res.get("taxaAtual", 0.0))
+                        taxa_prevista_modelo = float(res.get("taxaPrevistaModelo", 0.0))
+                        casos_previstos_modelo = float(res.get("casosPrevistosModelo", 0.0))
+                        indice_risco = float(
+                            res.get(
+                                "indiceRiscoConsiderado",
+                                res.get("taxaIncidencia", 0.0)
+                            )
+                        )
 
                         cores = {
                             "ALERTA MÁXIMO": "#B91C1C",
                             "RISCO MODERADO": "#D97706",
-                            "RISCO BAIXO": "#15803D"
+                            "RISCO BAIXO": "#15803D",
+                            "SERVIÇO INDISPONÍVEL": "#475569"
                         }
+
                         cor_fundo = cores.get(nivel_risco, "#1E3A8A")
 
-                        st.markdown(f"""
-                            <div class="status-box" style="background-color: {cor_fundo};">
-                                <h2 style="color: white; margin:0; font-size: 32px;">
-                                    ESTADO IDENTIFICADO: {nivel_risco}
-                                </h2>
-                                <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 10px;">
-                                    Taxa de Incidência Calculada: <b>{taxa:.2f}</b> por 100 mil/hab.
-                                </p>
-                            </div>
-                        """, unsafe_allow_html=True)
+                        html_resultado = (
+                            f'<div class="status-box" style="background-color: {cor_fundo};">'
+                            f'<h2 style="color: white; margin: 0; font-size: 32px;">'
+                            f'ESTADO IDENTIFICADO: {nivel_risco}'
+                            f'</h2>'
+                            f'<p style="color: rgba(255,255,255,0.95); font-size: 18px; margin-top: 18px;">'
+                            f'Índice preditivo considerado: <b>{indice_risco:.2f}</b> por 100 mil/hab.'
+                            f'</p>'
+                            f'<p style="color: rgba(255,255,255,0.85); font-size: 15px; margin-top: 8px;">'
+                            f'Taxa atual observada: <b>{taxa_atual:.2f}</b> por 100 mil/hab. '
+                            f'&nbsp;|&nbsp; '
+                            f'Taxa prevista pelo modelo: <b>{taxa_prevista_modelo:.2f}</b> por 100 mil/hab.'
+                            f'</p>'
+                            f'<p style="color: rgba(255,255,255,0.75); font-size: 14px; margin-top: 6px;">'
+                            f'Casos estimados pelo modelo preditivo: <b>{casos_previstos_modelo:.0f}</b>'
+                            f'</p>'
+                            f'</div>'
+                        )
+
+                        st.markdown(html_resultado, unsafe_allow_html=True)
+
+                        st.info(
+                            "A classificação final considera o maior valor entre a taxa atual observada "
+                            "e a taxa prevista pelo modelo preditivo. Por isso, a taxa atual pode ser menor "
+                            "que o índice usado para classificar o risco."
+                        )
+
                     else:
                         st.error(f"Erro na requisição. Código HTTP: {response.status_code}")
 
                 except Exception as e:
-                    st.error(f"⚠️ Motor Backend Indisponível. Certifique-se de que o Java (porta 8080) está rodando. Detalhes: {e}")
+                    st.error(
+                        "⚠️ Motor Backend Indisponível. Certifique-se de que o Java "
+                        f"(porta 8080) está rodando. Detalhes: {e}"
+                    )
         else:
             st.info("Aguardando execução. Ajuste os parâmetros acima e clique em 'Executar Motor de Inferência'.")
 
@@ -764,10 +834,18 @@ def modulo_dashboard():
         st.markdown("### Fundamentação Teórica")
         st.write(
             "A classificação de risco utiliza uma arquitetura híbrida, integrando um backend em "
-            "**Java 17 (Spring Boot)** para processamento de regras de negócio e cálculo da Taxa de "
-            "Incidência (casos x 100.000 / população), com um serviço de inteligência artificial em "
-            "**Python (Flask)** responsável por avaliar a probabilidade de eclosão de vetores baseando-se "
-            "em variáveis climáticas e séries temporais epidemiológicas."
+            "**Java 17 (Spring Boot)** para processamento de regras de negócio e cálculo da taxa "
+            "atual de incidência, com um serviço de inteligência artificial em **Python (Flask)** "
+            "responsável por estimar cenários preditivos a partir de variáveis climáticas e séries "
+            "temporais epidemiológicas."
+        )
+
+        st.markdown("### Como interpretar o resultado")
+        st.write(
+            "A taxa atual observada representa a incidência calculada com os casos informados na tela. "
+            "A taxa prevista pelo modelo representa uma estimativa gerada pela IA com base nos dados "
+            "epidemiológicos, climáticos e históricos utilizados no treinamento. O índice preditivo "
+            "considerado usa o maior valor entre essas duas taxas para definir a classificação final."
         )
 
 
