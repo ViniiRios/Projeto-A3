@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import datetime
+from pathlib import Path
+from PIL import Image
 
 # --- 1. CONFIGURAÇÕES GERAIS ---
 
@@ -120,110 +122,177 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
-    
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    html, body, [class*="css"]  {
+        font-family: 'Inter', sans-serif;
+    }
+
     [data-testid="stAppViewContainer"] {
-        background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 100%) !important;
-        background-attachment: fixed;
+        background-color: #F8FAFC !important;
     }
 
     [data-testid="stHeader"] {
         background: rgba(0,0,0,0) !important;
     }
-    
+
     [data-testid="stSidebar"] {
-        background-color: #F0F4F8 !important;
-        border-right: 2px solid #E2E8F0;
+        background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%) !important;
+        color: #F8FAFC !important;
     }
 
     [data-testid="stSidebar"] * {
-        font-size: 16px !important;
+        color: #F8FAFC !important;
     }
-    
-    .logo-login { 
-        color: #1E3A8A; 
-        font-weight: 900; 
-        font-size: 85px !important;
+
+    [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] p {
+        color: #F8FAFC !important;
+    }
+
+    [data-testid="metric-container"] {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 15px 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border-left: 6px solid #3B82F6;
+        transition: transform 0.2s ease-in-out;
+    }
+
+    [data-testid="metric-container"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .title-dashboard {
+        color: #0F172A;
+        font-size: 36px !important;
+        font-weight: 800;
+        margin-bottom: 5px;
+        background: -webkit-linear-gradient(45deg, #1D4ED8, #3B82F6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .small-muted {
+        color: #64748B;
+        font-size: 15px;
+    }
+
+    .status-box { 
+        padding: 30px; 
+        border-radius: 16px; 
         text-align: center; 
-        margin-top: -30px; 
-        margin-bottom: 0px; 
-        letter-spacing: -3px;
-        line-height: 1;
+        margin-top: 20px; 
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); 
+        color: white;
     }
-    
-    .logo-sub { 
-        color: #64748B; 
-        font-size: 32px !important;
-        text-align: center !important;
-        width: 100%;
-        display: block; 
-        margin-left: auto;
-        margin-right: auto;
-        margin-bottom: 45px; 
-        font-weight: 600;
-        letter-spacing: -0.5px;
-        line-height: 1.2;
-    }
-    
+
     label {
-        font-size: 1.15rem !important;
         color: #1E293B !important;
-        font-weight: 700 !important;
-        margin-bottom: 8px !important;
+        font-weight: 600 !important;
     }
-    
+
     div[data-baseweb="input"], div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
         border: 1px solid #CBD5E1 !important;
         border-radius: 8px !important;
-        padding: 4px 6px;
         transition: all 0.3s ease;
     }
-    
+
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"]:focus-within {
         border-color: #2563EB !important;
         box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
     }
-    
+
     div.stButton > button { 
-        background-color: #1E3A8A !important;
-        color: white; 
-        width: 100%; 
+        background-color: #2563EB !important;
+        color: white !important; 
         border-radius: 8px; 
-        font-weight: 700; 
-        font-size: 20px !important;
-        padding: 1rem;
-        transition: all 0.3s ease; 
+        font-weight: 600; 
         border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        transition: all 0.3s ease;
     }
 
     div.stButton > button:hover { 
-        background-color: #1D4ED8; 
-        transform: translateY(-2px); 
-        box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        background-color: #1D4ED8 !important; 
+        box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+        transform: translateY(-1px);
     }
-    
-    .status-box { 
-        padding: 35px; 
-        border-radius: 16px; 
-        text-align: center; 
-        margin-top: 20px; 
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2); 
+
+    button[data-baseweb="tab"] {
+        font-weight: 600 !important;
+        color: #64748B !important;
+        padding-top: 15px !important;
+        padding-bottom: 15px !important;
+    }
+
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #2563EB !important;
+        border-bottom-color: #2563EB !important;
+        border-bottom-width: 3px !important;
+        background-color: #EFF6FF !important;
+        border-radius: 8px 8px 0 0;
     }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
+
+
+@st.cache_data(show_spinner=False)
+def obter_caminho_imagem(nome_arquivo):
+    pasta_app = Path(__file__).parent
+    candidatos = [
+        pasta_app / "assets" / "images" / nome_arquivo,
+        pasta_app / nome_arquivo
+    ]
+
+    for caminho in candidatos:
+        if caminho.exists():
+            return str(caminho)
+
+    return None
+
+
+@st.cache_data(show_spinner=False)
+def carregar_imagem_sem_fundo(nome_arquivo, tolerancia=245):
+    caminho = obter_caminho_imagem(nome_arquivo)
+
+    if not caminho:
+        return None
+
+    try:
+        imagem = Image.open(caminho).convert("RGBA")
+        pixels = imagem.getdata()
+        novos_pixels = []
+
+        for r, g, b, a in pixels:
+            if r >= tolerancia and g >= tolerancia and b >= tolerancia:
+                novos_pixels.append((255, 255, 255, 0))
+            else:
+                novos_pixels.append((r, g, b, a))
+
+        imagem.putdata(novos_pixels)
+        return imagem
+
+    except Exception:
+        return caminho
+
 
 # --- 2. GERENCIAMENTO DE ESTADO ---
 
-if 'logged_in' not in st.session_state:
-    st.session_state['logged_in'] = False
-if 'user_role' not in st.session_state:
-    st.session_state['user_role'] = ""
-if 'user_name' not in st.session_state:
-    st.session_state['user_name'] = ""
-if 'historico_importacoes' not in st.session_state:
-    st.session_state['historico_importacoes'] = []
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+
+if "user_role" not in st.session_state:
+    st.session_state["user_role"] = ""
+
+if "user_name" not in st.session_state:
+    st.session_state["user_name"] = ""
+
+if "historico_importacoes" not in st.session_state:
+    st.session_state["historico_importacoes"] = []
+
 
 # --- 3. FUNÇÕES AUXILIARES DE INTEGRAÇÃO ---
 
@@ -246,7 +315,10 @@ def autenticar_usuario_backend(username, senha):
         return None
 
     except Exception as e:
-        st.error(f"Não foi possível conectar ao backend de autenticação. Verifique se o Java está rodando na porta 8080. Detalhes: {e}")
+        st.error(
+            "Não foi possível conectar ao backend de autenticação. "
+            f"Verifique se o Java está rodando na porta 8080. Detalhes: {e}"
+        )
         return None
 
 
@@ -594,44 +666,131 @@ def exibir_resultado_validacao(resultado):
         )
         st.dataframe(df_vazios, use_container_width=True, hide_index=True)
 
+
 # --- 4. MÓDULOS DO SISTEMA ---
 
 def modulo_login():
-    st.markdown('<h1 class="logo-login">VigiA-SUS</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="logo-sub">Plataforma de Inteligência e Monitoramento Epidemiológico</p>', unsafe_allow_html=True)
-    
-    _, col_login, _ = st.columns([1.5, 1, 1.5])
-    
-    with col_login:
-        with st.container(border=True):
-            st.markdown("### 🔐 Autenticação de Acesso")
-            st.markdown("Insira suas credenciais:")
-            
-            with st.form("form_auth"):
-                username = st.text_input("Usuário")
-                password = st.text_input("Senha", type="password")
-                submit_login = st.form_submit_button("Acessar Plataforma")
+    st.markdown("""
+    <style>
+    [data-testid="stAppViewContainer"] {
+        background-color: #FFFFFF !important;
+    }
+
+    .block-container {
+        padding-top: 4.2rem !important;
+        padding-bottom: 1rem !important;
+        max-width: 1180px !important;
+    }
+
+    .login-title {
+        color: #0F172A;
+        font-size: 32px;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 4px;
+    }
+
+    .login-subtitle {
+        color: #64748B;
+        font-size: 15px;
+        text-align: center;
+        margin-bottom: 22px;
+    }
+
+    .login-logo-space {
+        height: 30px;
+    }
+
+    .login-card-space {
+        height: 50px;
+    }
                 
-                if submit_login:
-                    if not username or not password:
-                        st.warning("Informe usuário e senha para acessar o sistema.")
-                    else:
-                        usuario = autenticar_usuario_backend(username, password)
+    div[data-baseweb="input"] {
+        background-color: #F1F5F9 !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 8px !important;
+    }
 
-                        if usuario is not None:
-                            st.session_state['logged_in'] = True
-                            st.session_state['user_role'] = usuario.get("perfil", "")
-                            st.session_state['user_name'] = usuario.get("nome", username)
-                            st.rerun()
+    div[data-baseweb="input"] > div {
+        background-color: #F1F5F9 !important;
+        border-radius: 8px !important;
+    }
+
+    div[data-baseweb="input"] input {
+        background-color: #F1F5F9 !important;
+    }
+
+    div[data-baseweb="input"] button {
+        background-color: #F1F5F9 !important;
+        box-shadow: none !important;
+    }
+
+    @media (max-width: 900px) {
+        .block-container {
+            padding-top: 1rem !important;
+        }
+
+        .login-logo-space,
+        .login-card-space {
+            height: 0px;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    col_margem_esq, col_conteudo, col_margem_dir = st.columns([0.35, 2.3, 0.35])
+
+    with col_conteudo:
+        col_logo, col_login = st.columns([1.25, 0.95], gap="large")
+
+        with col_logo:
+            st.markdown("<div class='login-logo-space'></div>", unsafe_allow_html=True)
+
+            logo_vertical = obter_caminho_imagem("logo_vertical.png")
+
+            if logo_vertical:
+                st.image(logo_vertical, width=1500)
+            else:
+                st.markdown('<h1 class="logo-login">VigiA-SUS</h1>', unsafe_allow_html=True)
+
+        with col_login:
+            st.markdown("<div class='login-card-space'></div>", unsafe_allow_html=True)
+
+            with st.container(border=True):
+                st.markdown(
+                    "<div class='login-title'>🔐 Autenticação</div>",
+                    unsafe_allow_html=True
+                )
+                st.markdown(
+                    "<div class='login-subtitle'>Acesso ao sistema VigiA-SUS</div>",
+                    unsafe_allow_html=True
+                )
+
+                with st.form("form_auth", clear_on_submit=False):
+                    username = st.text_input("Nome de usuário")
+                    password = st.text_input("Senha", type="password")
+                    submit_login = st.form_submit_button("Entrar", use_container_width=True)
+
+                    if submit_login:
+                        if not username or not password:
+                            st.warning("Informe nome de usuário e senha.")
                         else:
-                            st.error("❌ Credenciais inválidas ou usuário inativo.")
+                            usuario = autenticar_usuario_backend(username, password)
 
-            st.caption("Login validado pelo backend e pela tabela de usuários no PostgreSQL.")
-
+                            if usuario is not None:
+                                st.session_state["logged_in"] = True
+                                st.session_state["user_role"] = usuario.get("perfil", "")
+                                st.session_state["user_name"] = usuario.get("nome", username)
+                                st.rerun()
+                            else:
+                                st.error("Credenciais inválidas ou usuário inativo.")
 
 def modulo_dashboard():
-    st.markdown('<p class="title-dashboard">📊 Módulo Preditivo de Risco</p>', unsafe_allow_html=True)
-    st.markdown("Simulação de cenários epidemiológicos utilizando modelos de regressão validados no backend.")
+    st.markdown('<p class="title-dashboard">⚡ Dashboard Preditivo de Risco</p>', unsafe_allow_html=True)
+    st.markdown(
+        "<p class='small-muted'>Simulação de cenários epidemiológicos integrada ao backend Java e ao motor preditivo Python.</p>",
+        unsafe_allow_html=True
+    )
 
     st.markdown("### ⚙️ Parâmetros da Análise")
 
@@ -684,12 +843,12 @@ def modulo_dashboard():
 
         with c6:
             st.markdown("<br>", unsafe_allow_html=True)
-            btn_predicao = st.button("🚀 Executar Motor de Inferência")
+            btn_predicao = st.button("🚀 Executar Inferência", use_container_width=True)
 
     tab_res, tab_dados_regionais, tab_met = st.tabs([
-        "Resultados da Análise",
-        "Dados Regionais",
-        "Metodologia Empregada"
+        "🎯 Resultados da Análise",
+        "🌎 Dados Regionais",
+        "📖 Metodologia Empregada"
     ])
 
     with tab_res:
@@ -1036,18 +1195,18 @@ def exibir_aba_manutencao_area():
 
 
 def modulo_cadastro(role):
-    st.markdown('<p class="title-dashboard">📂 Gestão Territorial de Saúde</p>', unsafe_allow_html=True)
+    st.markdown('<p class="title-dashboard">📂 Gestão Territorial</p>', unsafe_allow_html=True)
     st.markdown(
-        "Consulta, cadastro e manutenção das áreas monitoradas pelo sistema, com dados persistidos no "
-        "backend Java e no banco PostgreSQL."
+        "<p class='small-muted'>Gerenciamento das áreas de saúde, dados populacionais e métricas de ovitrampas.</p>",
+        unsafe_allow_html=True
     )
 
     if role in PERFIS_COM_GESTAO_COMPLETA:
         tab_areas, tab_ovitrampas, tab_cadastro, tab_manutencao = st.tabs([
-            "Áreas Monitoradas",
-            "Ovitrampas por Área",
-            "Cadastro de Área",
-            "Manutenção de Área"
+            "📍 Visão Geral",
+            "🧪 Ovitrampas",
+            "➕ Nova Área",
+            "⚙️ Manutenção"
         ])
 
         with tab_areas:
@@ -1064,8 +1223,8 @@ def modulo_cadastro(role):
 
     else:
         tab_areas, tab_ovitrampas = st.tabs([
-            "Áreas Monitoradas",
-            "Ovitrampas por Área"
+            "📍 Visão Geral",
+            "🧪 Ovitrampas"
         ])
 
         with tab_areas:
@@ -1209,18 +1368,29 @@ def modulo_importacao():
 
 
 def modulo_sobre_projeto():
-    st.markdown('<p class="title-dashboard">ℹ️ Sobre o Projeto</p>', unsafe_allow_html=True)
+    col_texto, col_logo = st.columns([2.2, 0.9], gap="large")
 
-    st.markdown("### VigiA-SUS — Sistema de Monitoramento Epidemiológico")
-    st.write(
-        "O VigiA-SUS é uma plataforma acadêmica desenvolvida para apoiar o monitoramento epidemiológico, "
-        "organizando dados territoriais, epidemiológicos, climáticos e entomológicos em uma interface única."
-    )
+    with col_texto:
+        st.markdown('<p class="title-dashboard">📖 Sobre o Projeto</p>', unsafe_allow_html=True)
+        st.markdown("### VigiA-SUS — Sistema de Monitoramento Epidemiológico")
+        st.write(
+            "O VigiA-SUS é uma plataforma acadêmica desenvolvida para apoiar o monitoramento epidemiológico, "
+            "organizando dados territoriais, epidemiológicos, climáticos e entomológicos em uma interface única."
+        )
+
+    with col_logo:
+        logo_sobre = carregar_imagem_sem_fundo("logo_horizontal_2.png")
+
+        if logo_sobre:
+            st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+            st.image(logo_sobre, width=260)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Versão", "MVP v1.0")
-    c2.metric("Área", "Saúde Pública")
-    c3.metric("Status", "Funcional")
+    c1.metric("📦 Versão", "MVP v1.0")
+    c2.metric("🏥 Área", "Saúde Pública")
+    c3.metric("💻 Status", "Funcional")
 
     st.markdown("---")
 
@@ -1242,7 +1412,7 @@ def modulo_sobre_projeto():
             "Finalidade": "Consultar áreas monitoradas, indicadores de ovitrampas, cadastrar áreas e realizar manutenção de status."
         },
         {
-            "Módulo": "Importação de Insumos",
+            "Módulo": "Central de Importação",
             "Finalidade": "Validar arquivos CSV antes da carga oficial dos dados no banco PostgreSQL."
         },
         {
@@ -1272,48 +1442,62 @@ def modulo_sobre_projeto():
 
 # --- 5. ROTEADOR PRINCIPAL E CONTROLE DE ACESSO ---
 
-if not st.session_state['logged_in']:
+if not st.session_state["logged_in"]:
     modulo_login()
 else:
-    role = st.session_state['user_role']
-    nome_usuario = st.session_state.get('user_name', '')
-    
+    role = st.session_state["user_role"]
+    nome_usuario = st.session_state.get("user_name", "")
+
     with st.sidebar:
-        st.markdown("### Sessão")
+        logo_horizontal = obter_caminho_imagem("logo_horizontal.png")
+
+        if logo_horizontal:
+            st.image(logo_horizontal, use_container_width=True)
+        else:
+            st.markdown("## VigiA-SUS")
+
+        st.markdown("<hr style='border-color: #334155; margin-top: 0;'>", unsafe_allow_html=True)
+        st.markdown(
+            "<p style='color: #94A3B8; font-size: 14px; margin-bottom: 5px;'>SESSÃO ATIVA</p>",
+            unsafe_allow_html=True
+        )
 
         if nome_usuario:
-            st.info(f"👤 {nome_usuario}\n\nPerfil: {role}")
+            st.markdown(f"**👤 {nome_usuario}**\n\n🛡️ {role}")
         else:
-            st.info(f"👤 {role}")
+            st.markdown(f"**👤 {role}**")
 
-        st.markdown("---")
-        st.markdown("### Navegação")
-        
+        st.markdown("<hr style='border-color: #334155;'>", unsafe_allow_html=True)
+        st.markdown(
+            "<p style='color: #94A3B8; font-size: 14px; margin-bottom: 5px;'>MÓDULOS</p>",
+            unsafe_allow_html=True
+        )
+
         opcoes_menu = ["Dashboard Preditivo"]
-        
+
         if role in PERFIS_COM_GESTAO_CONSULTA:
             opcoes_menu.append("Gestão Territorial")
 
         if role in PERFIS_COM_IMPORTACAO:
-            opcoes_menu.append("Importação de Insumos")
+            opcoes_menu.append("Central de Importação")
 
         opcoes_menu.append("Sobre o Projeto")
-            
-        navegacao = st.radio("Módulos do Sistema", opcoes_menu)
-        
-        st.markdown("---")
-        st.markdown("### Conta")
-        if st.button("Encerrar Sessão", type="secondary"):
-            st.session_state['logged_in'] = False
-            st.session_state['user_role'] = ""
-            st.session_state['user_name'] = ""
+
+        navegacao = st.radio("", opcoes_menu, label_visibility="collapsed")
+
+        st.markdown("<hr style='border-color: #334155;'>", unsafe_allow_html=True)
+
+        if st.button("🚪 Encerrar Sessão", use_container_width=True):
+            st.session_state["logged_in"] = False
+            st.session_state["user_role"] = ""
+            st.session_state["user_name"] = ""
             st.rerun()
 
     if navegacao == "Dashboard Preditivo":
         modulo_dashboard()
     elif navegacao == "Gestão Territorial":
         modulo_cadastro(role)
-    elif navegacao == "Importação de Insumos":
+    elif navegacao == "Central de Importação":
         modulo_importacao()
     elif navegacao == "Sobre o Projeto":
         modulo_sobre_projeto()
