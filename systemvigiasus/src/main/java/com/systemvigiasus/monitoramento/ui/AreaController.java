@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,6 +51,28 @@ public class AreaController {
     @GetMapping("/{id}")
     public ResponseEntity<AreaCadastroResponseDTO> buscarAreaPorId(@PathVariable Long id) {
         AreaCadastroResponseDTO response = areaCadastroService.buscarPorId(id);
+
+        if (response == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}/inativar")
+    public ResponseEntity<AreaCadastroResponseDTO> inativarArea(@PathVariable Long id) {
+        AreaCadastroResponseDTO response = areaCadastroService.inativarArea(id);
+
+        if (response == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}/reativar")
+    public ResponseEntity<AreaCadastroResponseDTO> reativarArea(@PathVariable Long id) {
+        AreaCadastroResponseDTO response = areaCadastroService.reativarArea(id);
 
         if (response == null) {
             return ResponseEntity.notFound().build();

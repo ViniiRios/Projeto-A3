@@ -2,6 +2,7 @@ package com.systemvigiasus.monitoramento.dto;
 
 public class AreaCadastroRequestDTO {
 
+    private String codigoArea;
     private String nome;
     private String unidadeSaude;
     private String bairro;
@@ -12,14 +13,23 @@ public class AreaCadastroRequestDTO {
     public AreaCadastroRequestDTO() {
     }
 
-    public AreaCadastroRequestDTO(String nome, String unidadeSaude, String bairro,
+    public AreaCadastroRequestDTO(String codigoArea, String nome, String unidadeSaude, String bairro,
                                   String regionalOuDistrito, Integer populacaoReferencia, String status) {
+        this.codigoArea = codigoArea;
         this.nome = nome;
         this.unidadeSaude = unidadeSaude;
         this.bairro = bairro;
         this.regionalOuDistrito = regionalOuDistrito;
         this.populacaoReferencia = populacaoReferencia;
         this.status = status;
+    }
+
+    public String getCodigoArea() {
+        return codigoArea;
+    }
+
+    public void setCodigoArea(String codigoArea) {
+        this.codigoArea = codigoArea;
     }
 
     public String getNome() {
