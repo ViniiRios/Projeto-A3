@@ -23,10 +23,10 @@ Este documento apresenta os requisitos não funcionais do VigiA-SUS, relacionado
 | RNF-11 | O sistema deve ter README atualizado com instruções de execução, tecnologias, funcionalidades e testes.                               | Alta       | Implementado              |
 | RNF-12 | O projeto deve manter histórico de commits frequentes e descritivos no GitHub.                                                        | Alta       | Implementado              |
 | RNF-13 | As entregas devem ser rastreáveis por issues, commits, pull requests e evidências.                                                    | Alta       | Implementado              |
-| RNF-14 | O sistema deve apresentar interface compreensível para usuários não técnicos da área de saúde.                                        | Média      | Em refinamento            |
-| RNF-15 | As telas devem possuir organização visual suficiente para demonstração do MVP.                                                        | Média      | Em refinamento            |
+| RNF-14 | O sistema deve apresentar interface compreensível para usuários não técnicos da área de saúde.                                        | Média      | Parcialmente atendido     |
+| RNF-15 | As telas devem possuir organização visual suficiente para demonstração do MVP.                                                        | Média      | Implementado              |
 | RNF-16 | O sistema deve preservar dados de áreas monitoradas no banco mesmo quando elas forem inativadas.                                      | Alta       | Implementado              |
 | RNF-17 | O sistema deve validar arquivos CSV antes da carga oficial para reduzir inconsistências nos dados.                                    | Alta       | Implementado              |
 | RNF-18 | O sistema deve separar funcionalidades reais de funcionalidades demonstrativas/MVP na documentação.                                   | Alta       | Implementado              |
 | RNF-19 | O sistema deve permitir execução dos testes automatizados pelo Maven.                                                                 | Alta       | Implementado              |
-| RNF-20 | O projeto deve possuir documentação de testes, incluindo plano de teste, roteiros manuais, BDD e usabilidade.                         | Alta       | Parcialmente implementado |
+| RNF-20 | O projeto deve possuir documentação de testes, incluindo plano de teste, roteiros manuais, BDD e usabilidade.                         | Alta       | Implementado              |

@@ -75,29 +75,29 @@
 
 ### 🧷🧭 Rastreabilidade (Requisitos x Testes)
 
-| ID Req | Requisito/Funcionalidade                      | ⭐ Prioridade | 🔗 Fonte (Issue/PR) | 🧪 IDs de testes (UT/BDD/RT)                 | 📌 Status |
-| ------ | --------------------------------------------- | ------------ | ------------------- | -------------------------------------------- | --------- |
-| RF-01  | Autenticação de usuários por login e senha    | 🔥 Alta      | A preencher         | BDD-01, BDD-02, RT-01, RT-14                 | 🟢 Passou |
-| RF-02  | Controle de acesso por perfil de usuário      | 🔥 Alta      | A preencher         | RT-02                                        | 🟢 Passou |
-| RF-03  | Dashboard Preditivo                           | 🔥 Alta      | A preencher         | RT-03, RT-12                                 | 🟢 Passou |
-| RF-04  | Entrada de dados epidemiológicos e climáticos | 🔥 Alta      | A preencher         | BDD-07, BDD-08, BDD-09, RT-03, RT-12         | 🟢 Passou |
-| RF-05  | Cálculo da taxa de incidência                 | 🔥 Alta      | A preencher         | UT-03, BDD-07, BDD-08, BDD-09, RT-03, RT-12  | 🟢 Passou |
-| RF-06  | Classificação de risco epidemiológico         | 🔥 Alta      | A preencher         | UT-03, BDD-07, BDD-08, BDD-09, RT-03, RT-12  | 🟢 Passou |
-| RF-07  | Exibição de dados regionais de casos e clima  | ⚠️ Média     | A preencher         | RT-04                                        | 🟢 Passou |
-| RF-08  | Listagem de áreas monitoradas                 | 🔥 Alta      | A preencher         | UT-01, BDD-04, RT-05                         | 🟢 Passou |
-| RF-09  | Cadastro de áreas monitoradas                 | 🔥 Alta      | A preencher         | UT-01, BDD-03, RT-06                         | 🟢 Passou |
-| RF-10  | Geração automática de código da área          | ⚠️ Média     | A preencher         | UT-01, BDD-03, RT-06                         | 🟢 Passou |
-| RF-11  | Inativação de área monitorada                 | 🔥 Alta      | A preencher         | UT-01, BDD-05, RT-07                         | 🟢 Passou |
-| RF-12  | Reativação de área monitorada                 | 🔥 Alta      | A preencher         | UT-01, BDD-06, RT-07                         | 🟢 Passou |
-| RF-13  | Consulta de ovitrampas por área               | 🔥 Alta      | A preencher         | BDD-10, BDD-11, RT-08                        | 🟢 Passou |
-| RF-14  | Exibição de indicadores entomológicos         | ⚠️ Média     | A preencher         | BDD-10, RT-08                                | 🟢 Passou |
-| RF-15  | Pré-validação de arquivos CSV de insumos      | 🔥 Alta      | A preencher         | RT-09, RT-10, RT-13                          | 🟢 Passou |
-| RF-16  | Verificação de colunas e campos vazios em CSV | 🔥 Alta      | A preencher         | RT-09, RT-10, RT-13                          | 🟢 Passou |
-| RF-17  | Download de modelos CSV                       | ⚠️ Média     | A preencher         | RT-09                                        | 🟢 Passou |
-| RF-18  | Histórico temporário de validações            | ⚠️ Média     | A preencher         | RT-10                                        | 🟢 Passou |
-| RF-19  | Tela Sobre o Projeto                          | 🟦 Baixa     | A preencher         | RT-11                                        | 🟢 Passou |
-| RF-20  | Integração Java com serviço Python            | 🔥 Alta      | A preencher         | UT-04, RT-03, RT-12                          | 🟢 Passou |
-| RF-21  | Persistência em PostgreSQL                    | 🔥 Alta      | A preencher         | RT-05, RT-08, BDD-03, BDD-04, BDD-05, BDD-06 | 🟢 Passou |
+| ID Req | Requisito/Funcionalidade                      | ⭐ Prioridade | 🧪 IDs de testes (UT/BDD/RT)                 | 📌 Status |
+| ------ | --------------------------------------------- | ------------ | -------------------------------------------- | --------- |
+| RF-01  | Autenticação de usuários por login e senha    | 🔥 Alta      | BDD-01, BDD-02, RT-01, RT-14                 | 🟢 Passou |
+| RF-02  | Controle de acesso por perfil de usuário      | 🔥 Alta      | RT-02                                        | 🟢 Passou |
+| RF-03  | Dashboard Preditivo                           | 🔥 Alta      | RT-03, RT-12                                 | 🟢 Passou |
+| RF-04  | Entrada de dados epidemiológicos e climáticos | 🔥 Alta      | BDD-07, BDD-08, BDD-09, RT-03, RT-12         | 🟢 Passou |
+| RF-05  | Cálculo da taxa de incidência                 | 🔥 Alta      | UT-03, BDD-07, BDD-08, BDD-09, RT-03, RT-12  | 🟢 Passou |
+| RF-06  | Classificação de risco epidemiológico         | 🔥 Alta      | UT-03, BDD-07, BDD-08, BDD-09, RT-03, RT-12  | 🟢 Passou |
+| RF-07  | Exibição de dados regionais de casos e clima  | ⚠️ Média     | RT-04                                        | 🟢 Passou |
+| RF-08  | Listagem de áreas monitoradas                 | 🔥 Alta      | UT-01, BDD-04, RT-05                         | 🟢 Passou |
+| RF-09  | Cadastro de áreas monitoradas                 | 🔥 Alta      | UT-01, BDD-03, RT-06                         | 🟢 Passou |
+| RF-10  | Geração automática de código da área          | ⚠️ Média     | UT-01, BDD-03, RT-06                         | 🟢 Passou |
+| RF-11  | Inativação de área monitorada                 | 🔥 Alta      | UT-01, BDD-05, RT-07                         | 🟢 Passou |
+| RF-12  | Reativação de área monitorada                 | 🔥 Alta      | UT-01, BDD-06, RT-07                         | 🟢 Passou |
+| RF-13  | Consulta de ovitrampas por área               | 🔥 Alta      | BDD-10, BDD-11, RT-08                        | 🟢 Passou |
+| RF-14  | Exibição de indicadores entomológicos         | ⚠️ Média     | BDD-10, RT-08                                | 🟢 Passou |
+| RF-15  | Pré-validação de arquivos CSV de insumos      | 🔥 Alta      | RT-09, RT-10, RT-13                          | 🟢 Passou |
+| RF-16  | Verificação de colunas e campos vazios em CSV | 🔥 Alta      | RT-09, RT-10, RT-13                          | 🟢 Passou |
+| RF-17  | Download de modelos CSV                       | ⚠️ Média     | RT-09                                        | 🟢 Passou |
+| RF-18  | Histórico temporário de validações            | ⚠️ Média     | RT-10                                        | 🟢 Passou |
+| RF-19  | Tela Sobre o Projeto                          | 🟦 Baixa     | RT-11                                        | 🟢 Passou |
+| RF-20  | Integração Java com serviço Python            | 🔥 Alta      | UT-04, RT-03, RT-12                          | 🟢 Passou |
+| RF-21  | Persistência em PostgreSQL                    | 🔥 Alta      | RT-05, RT-08, BDD-03, BDD-04, BDD-05, BDD-06 | 🟢 Passou |
 
 > 🏷️ Convenção utilizada:
 >
@@ -165,4 +165,4 @@ Os testes automatizados unitários e BDD foram executados via Maven, com evidên
 
 Os testes manuais foram executados a partir da interface Streamlit, cobrindo login, controle de acesso por perfil, dashboard preditivo, dados regionais, gestão territorial, consulta de ovitrampas, formulário de cadastro de áreas, tela de manutenção, central de importação, regras dos insumos e tela Sobre o Projeto. As evidências foram registradas na pasta `docs/evidencias-finais/manuais/`.
 
-O teste de usabilidade foi previsto para validação com 3 participantes, com registro próprio na pasta `docs/evidencias-finais/usabilidade/`.
+O teste de usabilidade foi executado com 3 participantes externos, com registro próprio na pasta `docs/evidencias-finais/usabilidade/`.
