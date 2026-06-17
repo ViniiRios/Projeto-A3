@@ -2,7 +2,9 @@
 
 ## 📌 Resumo do Projeto
 
-O **VigiA-SUS** é um sistema acadêmico de monitoramento epidemiológico desenvolvido para apoiar a análise de risco em saúde pública. A aplicação organiza dados territoriais, epidemiológicos, climáticos e entomológicos, permitindo consultar áreas monitoradas, acompanhar indicadores de ovitrampas, validar insumos e executar uma análise preditiva de risco. O sistema possui backend em Java/Spring Boot, banco PostgreSQL, serviço complementar em Python para apoio ao cálculo preditivo e interface visual em Streamlit. O objetivo é oferecer uma ferramenta de apoio à tomada de decisão para equipes de vigilância e gestão em saúde.
+O VigiA-SUS é um sistema acadêmico de monitoramento epidemiológico desenvolvido para apoiar a análise de risco em saúde pública. A aplicação organiza dados territoriais, epidemiológicos, climáticos e entomológicos, permitindo consultar áreas monitoradas, acompanhar indicadores de ovitrampas, validar insumos e executar uma análise preditiva de risco.
+
+O sistema possui backend em Java/Spring Boot, banco PostgreSQL, serviço complementar em Python para apoio ao cálculo preditivo e interface visual em Streamlit. O objetivo é oferecer uma ferramenta de apoio à tomada de decisão para equipes de vigilância e gestão em saúde.
 
 ## 🎯 Problema que resolve e público-alvo
 
@@ -10,13 +12,30 @@ O monitoramento epidemiológico envolve dados de diferentes origens, como notifi
 
 O VigiA-SUS busca centralizar essas informações em uma plataforma única, facilitando a consulta, a análise e a classificação de risco epidemiológico.
 
-**Público-alvo:**
+Público-alvo:
 
 * gestores epidemiológicos;
 * analistas de vigilância;
 * analistas de dados;
 * operadores de importação de insumos;
 * profissionais e equipes de saúde pública.
+
+## ✅ Status do MVP
+
+O MVP do VigiA-SUS encontra-se funcional para fins acadêmicos, com os principais módulos implementados, testados e documentados.
+
+A versão final contempla:
+
+* backend Java/Spring Boot com API REST;
+* persistência em banco PostgreSQL;
+* integração com serviço Python para apoio preditivo;
+* interface web em Streamlit;
+* login com controle de acesso por perfil;
+* dashboard preditivo;
+* gestão territorial;
+* consulta de ovitrampas;
+* validação de insumos CSV;
+* documentação de requisitos, testes, evidências e apresentação final.
 
 ## ✨ Funcionalidades
 
@@ -84,9 +103,9 @@ O VigiA-SUS busca centralizar essas informações em uma plataforma única, faci
 
 A aplicação completa roda localmente com três partes abertas separadamente:
 
-1. backend Java/Spring Boot;
-2. serviço Python de IA;
-3. frontend Streamlit.
+* backend Java/Spring Boot;
+* serviço Python de IA;
+* frontend Streamlit.
 
 ### 1. Executar o backend Java
 
@@ -150,18 +169,21 @@ http://localhost:8501
 
 ## 👤 Usuários de teste
 
-| Usuário    | Senha  | Nome                   | Perfil                 |
-| ---------- | ------ | ---------------------- | ---------------------- |
-| `daniela`  | `1234` | Daniela Teixeira Abreu | Gestor de TI           |
-| `vinicius` | `1234` | Vinícius Raphael Rios  | Gestor Epidemiológico  |
-| `matheus`  | `1234` | Matheus Felipe Lopes   | Analista de Dados      |
-| `natali`   | `1234` | Nátali Isaltino Gomes  | Operador de Importação |
-| `marcela`  | `1234` | Marcela Maria Barbosa  | Analista de Vigilância |
+| Usuário  | Senha | Nome                   | Perfil                 |
+| -------- | ----- | ---------------------- | ---------------------- |
+| daniela  | 1234  | Daniela Teixeira Abreu | Gestor de TI           |
+| vinicius | 1234  | Vinícius Raphael Rios  | Gestor Epidemiológico  |
+| matheus  | 1234  | Matheus Felipe Lopes   | Analista de Dados      |
+| natali   | 1234  | Nátali Isaltino Gomes  | Operador de Importação |
+| marcela  | 1234  | Marcela Maria Barbosa  | Analista de Vigilância |
 
 ## 🧱 Estrutura de pastas
 
 ```text
 Projeto-A3/
+├── .vscode/
+│   └── settings.json
+│
 ├── ai-engine/
 │   ├── dados/
 │   ├── model/
@@ -170,19 +192,44 @@ Projeto-A3/
 │   └── requirements.txt
 │
 ├── frontend-prototype/
-│   └── app_streamlit.py
+│   ├── .streamlit/
+│   ├── assets/
+│   │   └── images/
+│   ├── app_streamlit.py
+│   └── requirements.txt
 │
 ├── systemvigiasus/
+│   ├── .mvn/
+│   ├── bin/
 │   ├── src/
 │   │   ├── main/
 │   │   └── test/
+│   ├── target/
+│   ├── HELP.md
+│   ├── mvnw
+│   ├── mvnw.cmd
 │   └── pom.xml
 │
 ├── docs/
+│   ├── apresentacao/
+│   │   └── slides/
 │   ├── requisitos/
+│   │   ├── requisitos-funcionais.md
+│   │   └── requisitos-nao-funcionais.md
 │   └── testes/
+│       ├── evidencias/
+│       │   ├── manuais/
+│       │   ├── unitarios/
+│       │   └── usabilidade/
+│       ├── evidencias-finais/
+│       │   ├── manuais/
+│       │   ├── unitarios/
+│       │   └── usabilidade/
+│       ├── plano-de-teste.md
+│       └── roteiros-de-teste.md
 │
-├── slides/
+├── .gitignore
+├── LICENSE
 └── README.md
 ```
 
@@ -224,12 +271,42 @@ O relatório HTML do Cucumber é gerado em:
 systemvigiasus/target/cucumber-report.html
 ```
 
-## 👥 Integrantes e papéis na Sprint
+## 📚 Documentação e evidências
+
+A documentação final do projeto está organizada na pasta `docs/`.
+
+Principais documentos:
+
+`docs/requisitos/`
+
+Contém os requisitos funcionais e não funcionais do sistema.
+
+`docs/testes/`
+
+Contém o plano de teste, os roteiros de teste e os documentos relacionados à validação do sistema.
+
+`docs/testes/evidencias-finais/manuais/`
+
+Contém prints dos testes manuais realizados na interface Streamlit.
+
+`docs/testes/evidencias-finais/unitarios/`
+
+Contém evidências dos testes automatizados, incluindo execução Maven, testes unitários e BDD com Cucumber.
+
+`docs/testes/evidencias-finais/usabilidade/`
+
+Contém o teste de usabilidade final, com participantes, tarefas avaliadas, comentários, notas, dificuldades observadas e conclusão.
+
+`docs/apresentacao/slides/`
+
+Contém a apresentação final do projeto.
+
+## 👥 Integrantes e papéis no projeto
 
 | Integrante                    | Matrícula  | Papel/Atuação                                                                                                   |
 | ----------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
 | Daniela Teixeira Abreu        | 4231923259 | Implementação inicial da IA, organização da documentação, estrutura de pastas e ajustes visuais/frontend        |
-| Marcela Maria Barbosa         | 422222661  | Apoio na validação funcional e testes do sistema                                                                |
+| Marcela Maria Barbosa         | 422222661  | Apoio na validação funcional, testes do sistema e teste de usabilidade                                          |
 | Matheus Felipe Lopes da Silva | 4231925981 | Tratamento de planilhas, organização de dados e apoio à base epidemiológica/climática                           |
 | Nátali Isaltino Gomes         | 4231925815 | Apoio no frontend, validação de telas e importação de insumos                                                   |
 | Vinícius Raphael Rios de Lima | 42321398   | Backend, banco de dados, integração Java/Python, refinamento da IA, testes automatizados e documentação técnica |
